@@ -1,0 +1,10 @@
+*.pdf
+data/
+fig/
+fit/
+lam/
+loglik/
+nopp/
+num/
+rtct/
+*.tex
