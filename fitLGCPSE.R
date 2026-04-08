@@ -2,27 +2,18 @@ rm(list = ls())
 library(Rcpp); library(RcppArmadillo)
 library(tidyverse); library(foreach)
 
+source('src/config.R')
 
 # runID = as.integer(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 # runID = 1
 
-fold.data = 'data'
-fold.fit = 'fit' 
+path.cpp = 'src/RcppFtns.cpp'
 
+fiti = fiti_lgcp
 
-path.fit = paste0('/work/rss10/sne_ns01/', fold.fit, '/')
 ifelse(!dir.exists(path.fit), dir.create(path.fit, recursive = T), FALSE)
 
-
-path.r = paste0('src/RFtns.R')
-path.cpp = paste0('src/RcppFtns.cpp')
-
-
-datai = 'nopp'
-fiti = 'LGCPSE_5c4h'
-
-
-load(paste0(fold.data, '/', datai, '.RData'))
+load(paste0(path.data, datai, '.RData'))
 filename = paste0(path.fit, datai, fiti, '.RData')
 
 sourceCpp(path.cpp)
@@ -32,13 +23,13 @@ sourceCpp(path.cpp)
 # ===========================================================================-
 ts = data$ts
 maxT = ceiling(max(ts))
-rho = 3 * 12 * 60 / 3 # effective range for GP is rho * 3
+rho = rho_lgcp    # effective range for GP is rho * 3
 
-# effective range (rho*3) should be smaller than shortest harmonic 
+# effective range (rho*3) should be smaller than shortest harmonic
 # and greater than sback
 
 # for numerical integration of the background intensity
-sback = 12 * 60 # unit = min # length of each segment
+sback = sback_lgcp # unit = min # length of each segment
 knts = unique(c(0, seq(0, maxT, by = sback), maxT)) # segment points
 m = length(knts) - 1 # number of segments for numerical integration
 
@@ -63,26 +54,15 @@ noise$UTC[1]
 #   cos(2 * pi * (knts + 6*60 + 27) / (4 * 30 * 24 * 60)) # 4m * 30d * 24h * 60m  # should be at least sback*4*2
 # )
 
-# New Harmonics, per email with Bok Kang on 2025-07-21
-# range(ns_01_all$start_datetime)[1]
-# [1] "2021-03-18 06:27:59 UTC"
-# harm_start_time <- (06 hours) * (60 minutes) + (27 minutes)
-harm_start_time <- 06 * 60 + 27
-harm_month_unit <- 30 * 24 * 60
-
-Xm = cbind(
-  1,
-  noiseVar,
-  sstVar,
-  sin(2 * pi * (knts + harm_start_time) / (1 * harm_month_unit)), # 1m * 30d * 24h * 60m
-  cos(2 * pi * (knts + harm_start_time) / (1 * harm_month_unit)),
-  sin(2 * pi * (knts + harm_start_time) / (3 * harm_month_unit)), # 3m * 30d * 24h * 60m
-  cos(2 * pi * (knts + harm_start_time) / (3 * harm_month_unit)), 
-  sin(2 * pi * (knts + harm_start_time) / (6 * harm_month_unit)), # 6m * 30d * 24h * 60m
-  cos(2 * pi * (knts + harm_start_time) / (6 * harm_month_unit)),
-  sin(2 * pi * (knts + harm_start_time) / (12 * harm_month_unit)), # 12m * 30d * 24h * 60m
-  cos(2 * pi * (knts + harm_start_time) / (12 * harm_month_unit))
-)
+# Harmonic columns: one sin + one cos per period in harm_periods_lgcp (minutes).
+# To add/remove harmonics, edit harm_periods_lgcp in src/config.R only.
+harm_cols = do.call(cbind, lapply(harm_periods_lgcp, function(p) {
+  cbind(
+    sin(2 * pi * (knts + harm_start_time) / p),
+    cos(2 * pi * (knts + harm_start_time) / p)
+  )
+}))
+Xm = cbind(1, noiseVar, sstVar, harm_cols)
 
 
 p = ncol(Xm)
@@ -131,20 +111,16 @@ deltaInd = p+1
 alphaInd = p+2
 etaInd = p+3
 
-sigma2 = rep(0.2^2, 3)
+sigma2 = sigma2_init
 adapIter = rep(1, 3)
 COVbeta = diag(p)
 COVdelta = COVeta = 1
 
-lb_eta = 3 / 20
+lb_eta = lb_eta_days
 ub_eta = 3 / min(diff(ts))
-shape_alpha = rate_alpha = 0.001
 
-
-niters = 150000
+niters = niters_lgcp
 updateCOV = TRUE
-adaptInterval = 200
-adaptFactorExponent = 0.8
 outers = c(0, seq(1000, niters, by = 1000))
 
 start = 1; postSamples = postBranching = postWm = c(); Accprob = 0; rtime = 0

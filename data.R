@@ -4,6 +4,7 @@ library(tidyverse); library(readr)
 
 source('src/RFtns.R')
 sourceCpp('src/RcppFtns.cpp')
+source('src/config.R')   # std, analysis_end, datai
 
 # Note that the times of the call data and noise data are labeled UTC but they are actually EST
 
@@ -90,9 +91,17 @@ noise = noise_filled %>%
 # > range(cox_01_all$end_datetime)[2]
 # [1] "2022-02-16 18:48:25 UTC"
 
-std = as.numeric(strptime('2021-03-18 06:27:00.000', "%Y-%m-%d %H:%M:%OS", tz = "UTC"))
-std_date <- range(noise$day)[1]
-end_date <- range(noise$day)[2]
+# Deployment origin: fixed reference from which ns_01_all$ts is measured (minutes).
+# Do not change this — it is a property of the raw data, not the analysis window.
+std_deploy     <- as.POSIXct('2021-03-18 06:27:00', tz = 'UTC')
+std_orig_num   <- as.numeric(std_deploy)   # seconds, for noise ts computation
+
+# Analysis window in minutes from deployment origin (std and analysis_end from config.R)
+offset_min <- as.numeric(difftime(std,          std_deploy, units = 'mins'))
+end_min    <- as.numeric(difftime(analysis_end, std_deploy, units = 'mins'))
+
+std_date <- as.Date(std)
+end_date <- as.Date(analysis_end)
 
 # =============================================================================-
 # SST variable ----
@@ -104,10 +113,10 @@ sst = read_csv('data/sst/2025-11-20_SNE_buoys_sst-data.csv') %>%
   as.data.frame()
 
 
-noise = noise %>% 
-  dplyr::mutate(ts = ( as.numeric(UTC) - std) / 60, noise = noise_scl) %>% # unit = 1 min
-  dplyr::filter(ts >= 0) %>% 
-  dplyr::select(UTC, date = day, ts, noise) %>% 
+noise = noise %>%
+  dplyr::mutate(ts = ( as.numeric(UTC) - std_orig_num) / 60, noise = noise_scl) %>% # unit = 1 min from deployment origin
+  dplyr::filter(ts >= 0) %>%
+  dplyr::select(UTC, date = day, ts, noise) %>%
   dplyr::arrange(ts)
 
 noise <- noise %>%
@@ -132,31 +141,28 @@ noise <- noise %>%
 
 # =============================================================================-
 # Final dataset ----
+# Filter to analysis window [std, analysis_end] and re-zero ts so ts=0 at std.
+# offset_min and end_min are in minutes from the deployment origin (std_deploy).
 # =============================================================================-
 
-std.final = (as.numeric(strptime('2021-03-18 06:27:00.000', "%Y-%m-%d %H:%M:%OS", tz = "UTC")) - std) / 60
-
-data = data %>% 
-  filter(ts >= (as.numeric(strptime('2021-03-18 06:27:00.000', "%Y-%m-%d %H:%M:%OS", tz = "UTC")) - std) / 60) %>% 
-  filter(ts <= (as.numeric(strptime('2022-04-30 04:00:52.000', "%Y-%m-%d %H:%M:%OS", tz = "UTC")) - std) / 60) %>% 
-  mutate(ts = ts - std.final)
+data = data %>%
+  filter(ts >= offset_min, ts <= end_min) %>%
+  mutate(ts = ts - offset_min)
 
 plot(data$ts)
 length(data$ts)
 length(unique(data$ts))
 
 
-noise = noise %>% 
-  filter(ts >= (as.numeric(strptime('2021-03-18 06:27:00.000', "%Y-%m-%d %H:%M:%OS", tz = "UTC")) - std) / 60) %>% 
-  filter(ts <= (as.numeric(strptime('2022-04-30 04:00:52.000', "%Y-%m-%d %H:%M:%OS", tz = "UTC")) - std) / 60) %>% 
-  mutate(ts = ts - std.final)
+noise = noise %>%
+  filter(ts >= offset_min, ts <= end_min) %>%
+  mutate(ts = ts - offset_min)
 
 dim(noise)
-dim(unique(noise))
 noise = unique(noise)
 
 
-save(data, noise, file = 'data/nopp.RData')
+save(data, noise, file = paste0('data/', datai, '.RData'))
 
 
 

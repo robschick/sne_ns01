@@ -3,28 +3,17 @@ library(foreach); library(doParallel)
 library(Rcpp); library(RcppArmadillo)
 library(tidyverse)
 
+source('src/config.R')
 
 # runID = as.integer(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 # runID = 1
 
+path.cpp = 'src/RcppFtns.cpp'
 
-fold.data = 'data'
-fold.fit = 'fit' 
-fold.loglik = 'loglik' 
+fiti = fiti_lgcp
+burn = burn_lgcp
 
-
-path.fit = paste0('/work/rss10/sne_ns01/', fold.fit, '/')
-path.loglik = paste0( fold.loglik, '/')
 ifelse(!dir.exists(path.loglik), dir.create(path.loglik, recursive = T), FALSE)
-
-
-
-path.r = paste0('src/RFtns.R')
-path.cpp = paste0('src/RcppFtns.cpp')
-
-
-datai = 'nopp'
-fiti = 'LGCPSE_5c4h'
 
 filename = paste0(path.loglik, datai, fiti, '_loglik.RData')
 
@@ -32,36 +21,13 @@ filename = paste0(path.loglik, datai, fiti, '_loglik.RData')
 # Load results ----
 # =============================================================================-
 
-load(paste0(fold.data, '/', datai, '.RData'))
-load(paste0(path.fit, datai, fiti, '.RData'))
-
-
-p = length(beta);p
-ncol(Xm)
-
-betaInd = 1:p
-deltaInd = p+1
-alphaInd = p+2
-etaInd = p+3
-
-
-burn = 10000
-postSamples = postSamples[-(1:burn),]
-postWm = postWm[-(1:burn),]
-
-niters = nrow(postSamples)
+source('src/load_fit.R')
 
 
 
 # =============================================================================-
-# Posterior intensity ----
+# Posterior log-likelihood ----
 # =============================================================================-
-ts = data$ts
-maxT = ceiling(max(ts))
-m = length(knts) - 1
-p = ncol(Xm)
-
-
 indlam0 = sapply(1:length(ts), function(i) which(knts >= ts[i])[1] - 1 - 1)
 
 aaa = unique(c(0, seq(1000, niters, by = 1000), niters))

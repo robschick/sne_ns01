@@ -3,27 +3,17 @@ library(foreach); library(doParallel)
 library(Rcpp); library(RcppArmadillo)
 library(tidyverse)
 
+source('src/config.R')
+
 runID = as.integer(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 # runID = 1
 
-fold.data = 'data'
-fold.fit = 'fit' 
-fold.lam = 'lam'
+path.cpp = 'src/RcppFtns.cpp'
 
+fiti = fiti_lgcp
+burn = burn_lgcp
 
-path.data = paste0(fold.data, '/')
-# path.fit = paste0('/work/bk232/upcallHawkes/schannel_rev/', fold, '/', fold.fit, '/')
-path.fit = paste0('/work/rss10/sne_ns01/', fold.fit, '/')
-path.lam = paste0( fold.lam, '/')
 ifelse(!dir.exists(path.lam), dir.create(path.lam, recursive = T), FALSE)
-
-
-path.r = paste0('src/RFtns.R')
-path.cpp = paste0('src/RcppFtns.cpp')
-
-
-datai = 'nopp'
-fiti = 'LGCPSE_5c4h'
 
 filename = paste0(path.lam, fiti, '_lam.RData')
 
@@ -32,37 +22,18 @@ filename = paste0(path.lam, fiti, '_lam.RData')
 # Load results ----
 # =============================================================================-
 
-load(paste0(path.data, datai, '.RData'))
-load(paste0(path.fit, datai, fiti, '.RData'))
+source('src/load_fit.R')
 
-
-p = length(beta);p
-ncol(Xm)
-
-betaInd = 1:p
-deltaInd = p+1
-alphaInd = p+2
-etaInd = p+3
-
-
-burn = 50000
-
-postBeta = postSamples[-(1:burn),betaInd]
-postDelta = exp(postSamples[-(1:burn),deltaInd])
-postAlpha = postSamples[-(1:burn),alphaInd]
-postEta = postSamples[-(1:burn),etaInd]
-postWm = postWm[-(1:burn),]
-
-niters = nrow(postSamples)
+postBeta  = postSamples[, betaInd]
+postDelta = exp(postSamples[, deltaInd])
+postAlpha = postSamples[, alphaInd]
+postEta   = postSamples[, etaInd]
 
 
 
 # =============================================================================-
 # Posterior intensity ----
 # =============================================================================-
-ts = data$ts
-maxT = ceiling(max(ts))
-# m = length(knts) - 1
 
 tsnew = seq(min(ts), max(ts), length.out = 2000)
 
