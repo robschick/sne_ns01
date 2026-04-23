@@ -1,31 +1,35 @@
-rm(list=ls())
-library(coda); library(tidyverse); library(egg); library(grid)
-# library(ggh4x) # facet_grid2
-library(spgs) # chisq.unif.test
-library(batchmeans); library(foreach)
-library(xtable)
-get_legend<-function(myggplot){
-  tmp <- ggplot_gtable(ggplot_build(myggplot))
-  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
-  legend <- tmp$grobs[[leg]]
-  return(legend)
-}
+# =============================================================================
+# 05_sumNum.R — Posterior expected event counts (background + self-excitement).
+#
+# Usage:   Rscript 05_sumNum.R --buoy=ns01
+# =============================================================================
 
-HPDprob = 0.95
-bmmean = function(x) { format(round(bm(x)$est), nsmall = 0) }
-hpd = function(x){ paste0('(',
-                          format(round(HPDinterval(as.mcmc(x), prob = HPDprob)[1]), nsmall = 0), ', ',
-                          format(round(HPDinterval(as.mcmc(x), prob = HPDprob)[2]), nsmall = 0), ')') }
+rm(list = ls())
+library(coda); library(tidyverse); library(batchmeans); library(xtable)
 
+source('src/config.R')
+source('src/RFtns.R')
 
-fits = c('NHPP', 'LGCP', 'NHPPSE', 'LGCPSE')
+fiti <- fiti_lgcp
 
-# NHPPSE
-load(paste0('num/nopp', fits[3], 'num.RData'))
-apply(cbind(rowSums(postNum), postNum), 2, bmmean)
-apply(cbind(rowSums(postNum), postNum), 2, hpd)
+ifelse(!dir.exists(path.fig), dir.create(path.fig, recursive = TRUE), FALSE)
 
-# LGCPSE
-load(paste0('num/nopp', fits[4], 'num.RData'))
-apply(cbind(rowSums(postNum), postNum), 2, bmmean)
-apply(cbind(rowSums(postNum), postNum), 2, hpd)
+load(paste0(path.num, datai, fiti, 'num.RData'))   # postNum: cols = c(numBack, numSE)
+
+postNum.total <- cbind(Total = rowSums(postNum),
+                       Background = postNum[, 1],
+                       SelfExcitement = postNum[, 2])
+
+tab.num <- data.frame(
+  Component = colnames(postNum.total),
+  Mean      = apply(postNum.total, 2, bmmean, digits = 0),
+  HPD       = apply(postNum.total, 2, hpd,    digits = 0),
+  row.names = NULL
+)
+
+print(tab.num)
+
+tab.num %>%
+  xtable() %>%
+  print(booktabs = FALSE, include.rownames = FALSE,
+        file = paste0(path.fig, 'Num.tex'))
