@@ -147,29 +147,32 @@ phase is just the glue:
 For each of `03_sumLoglik.R`, `05_sumDIC.R`, `05_sumEstM4.R`, `05_sumRTCT.R`,
 `05_sumXB.R`, `05_sumNum.R`, `05_sumLam.R`:
 
-- [ ] Replace preamble with `source('src/config.R'); source('src/RFtns.R')`.
-- [ ] `fiti <- fiti_lgcp; burn <- buoy_cfg$burn; source('src/load_fit.R')`
+- [x] Replace preamble with `source('src/config.R'); source('src/RFtns.R')`.
+- [x] `fiti <- fiti_lgcp; burn <- buoy_cfg$burn; source('src/load_fit.R')`
       (skip `load_fit.R` for scripts that don't need fit data — e.g.,
       `sumNum.R` just reads `path.num`, `sumRTCT.R` just reads `path.rtct`).
-- [ ] Remove all `datai = 'nopp'`, hardcoded `/work/rss10/`,
+- [x] Remove all `datai = 'nopp'`, hardcoded `/work/rss10/`,
       `/hpc/group/schicklab/`, `nopp/fig/`, hardcoded `burn = 50000`,
       `LGCPSE_5c4h` strings.
-- [ ] Outputs (figures + LaTeX tables) to `path.fig` with filenames that drop
+- [x] Outputs (figures + LaTeX tables) to `path.fig` with filenames that drop
       the `{datai}` prefix (folder already conveys buoy).
-- [ ] Drop multi-model `fits = c('NHPP', 'LGCP', 'NHPPSE', 'LGCPSE')` loops —
+- [x] Drop multi-model `fits = c('NHPP', 'LGCP', 'NHPPSE', 'LGCPSE')` loops —
       single-model (LGCPSE) only.
-- [ ] Drop `comb`/`runID` loops — single (fixed) config only.
+- [x] Drop `comb`/`runID` loops — single (fixed) config only.
 
 Script-specific:
-- [ ] `05_sumEstM4.R`: derive `Predictors` from `harm_periods_lgcp` using
+- [x] `05_sumEstM4.R`: derive `Predictors` from `harm_periods_lgcp` using
       `fmt_period()` — silent mislabel bug fix.
-- [ ] `05_sumLam.R`: origin for UTC reconstruction = `std` (from `config.R`),
+- [x] `05_sumLam.R`: origin for UTC reconstruction = `std` (from `config.R`),
       not the hardcoded NS01 deploy time at line 63.
-- [ ] `03_sumLoglik.R`: single-model traceplot. This is the script whose output
+- [x] `03_sumLoglik.R`: single-model traceplot. This is the script whose output
       you use to set `buoy_cfg$burn` — document that in its header comment.
-- [ ] `05_sumDIC.R`: one DIC row for the single fit (drop `for(runID ...)`).
+- [x] `05_sumDIC.R`: one DIC row for the single fit (drop `for(runID ...)`).
 
 Commits: one per script, or grouped by 2–3 where they're straightforward.
+Landed as three commits — `03_sumLoglik` standalone (it anchors the burn-in
+workflow), then `sumDIC + sumEstM4 + sumNum` (tables), then
+`sumRTCT + sumXB + sumLam` (plots).
 
 ### 8. README.md at repo root
 Sections:
