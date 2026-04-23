@@ -76,15 +76,12 @@ harm_month_unit <- 30 * 24 * 60    # 43,200 min per "month"
 # ── Model identity ────────────────────────────────────────────────────────────
 datai     <- buoy
 fiti_lgcp <- 'LGCPSE'
-fiti_nhpp <- 'NHPPSE'
 
 
 # ── Time discretization ───────────────────────────────────────────────────────
 sback_lgcp <- 12 * 60   # 720 min — segment width for LGCPSE numerical integration
-sback_nhpp <- 30        # 30 min  — segment width for NHPPSE
 
 rho_lgcp <- 3 * 12 * 60 / 3   # 60 min  (effective range = rho * 3 = 180 min)
-rho_nhpp <- 30                  # 30 min  (effective range = 90 min)
 
 
 # ── Harmonic periods for design matrix (in minutes) ──────────────────────────
@@ -96,8 +93,6 @@ harm_periods_lgcp <- c(
   1 * harm_month_unit,   # 1-month (~7 cycles)
   2 * harm_month_unit    # 2-month (~3.5 cycles)
 )
-
-# NHPPSE: defined inline in fitNHPPSE_parallel.R (different unit structure)
 
 
 # ── MCMC settings ─────────────────────────────────────────────────────────────
@@ -115,10 +110,9 @@ lb_eta_days <- 3 / 20   # lower bound for eta (set before ts is loaded)
 
 
 # ── Burn-in ───────────────────────────────────────────────────────────────────
-# Set ONCE after inspecting the loglik trace plot (loglikLGCPSE.R / loglikNHPPSE.R).
+# Set ONCE after inspecting the loglik trace plot (loglikLGCPSE.R).
 # All downstream scripts (lam, rtct, num, sum*) read burn from here.
 burn_lgcp <- 50000
-burn_nhpp <- 50000
 
 
 # ── Output paths ─────────────────────────────────────────────────────────────

@@ -10,9 +10,8 @@ source('src/config.R')
 
 path.cpp = 'src/RcppFtns.cpp'
 
-# Switch between models here — everything else adapts automatically
-fiti = fiti_lgcp   # or: fiti = fiti_nhpp
-burn = burn_lgcp   # or: burn = burn_nhpp
+fiti = fiti_lgcp
+burn = burn_lgcp
 
 ifelse(!dir.exists(path.rtct), dir.create(path.rtct, recursive = T), FALSE)
 
@@ -30,13 +29,7 @@ source('src/load_fit.R')
 # Random time change theorem (RTCT) ----
 # =============================================================================-
 
-# For LGCPSE: latent GP contributes exp(delta) * Wm to background log-rate.
-# For NHPPSE: no GP term — supply a zero matrix of the same dimensions.
-if (model_has_gp) {
-  deltaWm = exp(postSamples[, deltaInd]) * postWm
-} else {
-  deltaWm = matrix(0, nrow = niters, ncol = nrow(Xm))
-}
+deltaWm = exp(postSamples[, deltaInd]) * postWm
 
 aaa = unique(c(0, seq(10, length(ts), by = 10), length(ts)))
 

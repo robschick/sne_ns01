@@ -44,7 +44,8 @@ a grill-me session — decisions captured below.
 
 **In scope (refactor to use `config.R` + `load_fit.R` + `src/RFtns.R`):**
 - Cluster: `fitLGCPSE.R` ✅, `loglikLGCPSE.R` ✅, `lamLGCPSE.R` ✅,
-  `rtctLGCPSE.R`, `numLGCPSE.R`
+  `rtct.R` ✅ (canonical successor of `rtctLGCPSE.R`; NHPPSE branches stripped
+  in Phase 2), `num.R` ✅ (same story vs `numLGCPSE.R`)
 - Local: `sumLoglik.R` (burn-in trace — critical), `sumDIC_harmonics_rho.R`,
   `sumEstM4_harmonics_rho.R`, `sumRTCT_harmonics_rho.R`,
   `sumXB_harmonics_rho.R`, `sumNum.R`, `sumLam.R`
@@ -52,6 +53,8 @@ a grill-me session — decisions captured below.
 **Archive (`archive/`):**
 - NHPPSE pipeline: `fitNHPPSE_parallel.R`, `loglikNHPPSE.R`, `rtctNHPPSE.R`,
   `numNHPPSE.R`, `src/RcppFtns_parallel.cpp`
+- Superseded LGCPSE variants (48742ee introduced clean `rtct.R` / `num.R`
+  successors but never deleted these): `rtctLGCPSE.R`, `numLGCPSE.R`
 - Sweep-era duplicates: `sumRTCT.R`, `sumEst.R`, `sumEstM4.R`, `sumXB.R`,
   `sumDIC.R`
 - Unrelated/legacy: `sumData.R` (2009 Cape Cod manuscript fig — doesn't ingest
@@ -85,9 +88,9 @@ Drop `_harmonics_rho` suffix (no sweep → no disambiguation); add stage prefix.
 - [ ] `git mv fitLGCPSE.R 02_fitLGCPSE.R`
 - [ ] `git mv loglikLGCPSE.R 03_loglikLGCPSE.R`
 - [ ] `git mv sumLoglik.R 03_sumLoglik.R`
-- [ ] `git mv rtctLGCPSE.R 04_rtctLGCPSE.R`
+- [ ] `git mv rtct.R 04_rtctLGCPSE.R`
 - [ ] `git mv lamLGCPSE.R 04_lamLGCPSE.R`
-- [ ] `git mv numLGCPSE.R 04_numLGCPSE.R`
+- [ ] `git mv num.R 04_numLGCPSE.R`
 - [ ] `git mv sumDIC_harmonics_rho.R 05_sumDIC.R`
 - [ ] `git mv sumEstM4_harmonics_rho.R 05_sumEstM4.R`
 - [ ] `git mv sumRTCT_harmonics_rho.R 05_sumRTCT.R`
@@ -112,21 +115,17 @@ Drop `_harmonics_rho` suffix (no sweep → no disambiguation); add stage prefix.
 - [ ] `src/load_fit.R`: pull `burn` from `buoy_cfg$burn`.
 - [ ] Commit: `"per-buoy burn, path.fig, fit-archive fallback, consolidated helpers"`.
 
-### 5. Cluster script refactors (rtct, num)
-(`lamLGCPSE.R` already uses `config.R` + `load_fit.R` — just rename in §3.)
+### 5. Cluster script wiring (rtct, num, lam, fit, loglik — all already config-driven)
 
-- [ ] `04_rtctLGCPSE.R`:
-  - [ ] Remove `comb`, `runID`, `SLURM_ARRAY_TASK_ID`, hardcoded
-        `datai = 'nopp'`, hardcoded `burn = 50000`, hardcoded
-        `LGCPSE_5c4h` fiti, hardcoded `/work/rss10/` and `'rtct/'` paths.
-  - [ ] `source('src/config.R'); source('src/RFtns.R')`.
-  - [ ] `fiti <- fiti_lgcp; burn <- buoy_cfg$burn; source('src/load_fit.R')`.
-  - [ ] Outputs to `path.rtct`.
-- [ ] `04_numLGCPSE.R`: same treatment; outputs to `path.num`.
-- [ ] `aci_*.sh` cluster scripts: pass `--export=BUOY=ns01` (or equivalent) so
-      `config.R` resolves the buoy. Submit one job per buoy; drop SLURM array
-      indices.
-- [ ] Commit: `"refactor cluster rtct/num to config-driven, drop sweep scaffolding"`.
+All five cluster scripts are already config-driven after Phase 2 cleanup. This
+phase is just the glue:
+
+- [ ] Thread `buoy_cfg$burn` (added in Phase 4) through `04_rtctLGCPSE.R` and
+      `04_numLGCPSE.R` — they currently set `burn = burn_lgcp`.
+- [ ] `aci_*.sh` cluster scripts: pass `--export=ALL,BUOY=ns01` (or equivalent)
+      so `config.R` resolves the buoy. Submit one job per buoy; drop SLURM
+      array indices.
+- [ ] Commit: `"wire per-buoy burn + BUOY env to cluster scripts"`.
 
 ### 6. Fit archive auto-copy
 - [ ] At end of `02_fitLGCPSE.R`, after final `save(...)`:

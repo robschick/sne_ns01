@@ -10,9 +10,8 @@ source('src/config.R')
 
 path.cpp = 'src/RcppFtns.cpp'
 
-# Switch between models here — everything else adapts automatically
-fiti = fiti_lgcp   # or: fiti = fiti_nhpp
-burn = burn_lgcp   # or: burn = burn_nhpp
+fiti = fiti_lgcp
+burn = burn_lgcp
 
 ifelse(!dir.exists(path.num), dir.create(path.num, recursive = T), FALSE)
 
@@ -27,7 +26,7 @@ source('src/load_fit.R')
 
 thinidx     = floor(seq(1, niters, length.out = 1000))
 postSamples = postSamples[thinidx, ]
-if (model_has_gp) postWm = postWm[thinidx, ]
+postWm      = postWm[thinidx, ]
 niters = nrow(postSamples)
 
 indlam0 = sapply(1:length(ts), function(i) which(knts >= ts[i])[1] - 1 - 1)
@@ -49,11 +48,7 @@ for(aa in (start+1):length(aaa) ){
   dummy = c()
   for(iter in (aaa[aa-1]+1):(aaa[aa])){
 
-    if (model_has_gp) {
-      lam0m = exp( Xm %*% postSamples[iter, betaInd] + exp(postSamples[iter, deltaInd]) * postWm[iter, ] )
-    } else {
-      lam0m = exp( Xm %*% postSamples[iter, betaInd] )
-    }
+    lam0m = exp( Xm %*% postSamples[iter, betaInd] + exp(postSamples[iter, deltaInd]) * postWm[iter, ] )
 
     numBack = compIntLam0(maxT, lam0m)
     numSE   = sum(1 - exp( -postSamples[iter, etaInd] * (maxT - ts) )) *
