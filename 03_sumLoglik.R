@@ -1,107 +1,63 @@
-rm(list=ls())
-library(coda); library(tidyverse); library(egg); library(grid)
-# library(ggh4x) # facet_grid2
-library(batchmeans); library(foreach)
-library(xtable)
-get_legend<-function(myggplot){
-  tmp <- ggplot_gtable(ggplot_build(myggplot))
-  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
-  legend <- tmp$grobs[[leg]]
-  return(legend)
-}
+# =============================================================================
+# 03_sumLoglik.R — Trace and histogram of -2 log-likelihood for the LGCPSE fit.
+#
+# Critical burn-in diagnostic. The trace shows -2logL for the POST-BURN retained
+# chain (iterations buoy_cfg$burn + 1 .. niters). If the trace is still trending,
+# increase buoy_settings[[buoy]]$burn in src/config.R and re-run
+# 03_loglikLGCPSE.R on the cluster.
+#
+# Usage:   Rscript 03_sumLoglik.R --buoy=ns01
+# =============================================================================
 
+rm(list = ls())
+library(coda); library(tidyverse); library(batchmeans); library(xtable)
 
-load('nopp/data/nopp.RData')
-fits = c('NHPP', 'LGCP', 'NHPPSE', 'LGCPSE')
-# fits = c('NHPP', 'LGCP', 'LGCPSE')
+source('src/config.R')
+source('src/RFtns.R')
 
-burn = 10000
+fiti <- fiti_lgcp
+burn <- buoy_cfg$burn
 
-data.loglik = c()
-for(j in 1:length(fits)){
-  load(paste0('nopp/loglik/nopp', fits[j], 'loglik.RData'))
-  
-  data.loglik = rbind(data.loglik, 
-                      data.frame(fit = fits[j], Iteration = burn + 1:length(postLogLik), negTwoLoglik = -2*postLogLik))
-}
+ifelse(!dir.exists(path.fig), dir.create(path.fig, recursive = TRUE), FALSE)
 
-newlabs = c('(i) NHPP', '(ii) NHPP+GP', '(iii) NHPP+SE', '(iv) NHPP+GP+SE')
-# newlabs = c('(i) NHPP', '(ii) NHPP+GP', '(iv) NHPP+GP+SE')
+load(paste0(path.loglik, datai, fiti, '_loglik.RData'))   # postLogLik
 
-data.loglik$fit = factor(data.loglik$fit, levels = fits, labels = newlabs)
+data.loglik <- data.frame(
+  Iteration    = burn + seq_along(postLogLik),
+  negTwoLoglik = -2 * postLogLik
+)
 
-
-
-# -----------------------------------------------------------------------------=
-# Posterior distribution of -2 * loglik ----
-# -----------------------------------------------------------------------------=
-
-burn = 10000
-
-trace.negTwoLogLik = data.loglik %>% 
-  filter(Iteration > burn) %>%
+# ── Trace ───────────────────────────────────────────────────────────────────
+trace.negTwoLogLik <- data.loglik %>%
   ggplot(aes(x = Iteration, y = negTwoLoglik)) +
   geom_line() +
-  facet_wrap(~fit, scales = 'free', nrow = 1) +
-  # facet_wrap(~fit, nrow = 1) +
-  labs(x = 'Iteration', y = '-2logL')
-trace.negTwoLogLik
+  labs(x = 'Iteration', y = '-2logL') +
+  theme_bw()
 
-ggsave(plot = trace.negTwoLogLik, width = 10, height = 2, filename = 'nopp/fig/noppNegTwoLogLikTrace.eps')
+ggsave(plot = trace.negTwoLogLik, width = 6, height = 3,
+       filename = paste0(path.fig, 'NegTwoLogLikTrace.pdf'))
 
-
-groups = list(c(2, 3, 4))
-dummy = c()
-for(i in 1:length(groups)){
-  
-  range_ = data.loglik %>% 
-    filter(Iteration > burn) %>%
-    filter(fit %in% newlabs[groups[[i]]]) %>% 
-    select(negTwoLoglik) %>% 
-    range()
-  
-  for(j in groups[[i]]){
-    dummy = rbind(dummy, data.frame(fit = newlabs[j], negTwoLoglik = range_)) 
-  }
-}
-
-
-histall.negTwoLogLik = data.loglik %>% 
-  filter(Iteration >= burn) %>%
+# ── Histogram ───────────────────────────────────────────────────────────────
+hist.negTwoLogLik <- data.loglik %>%
   ggplot(aes(x = negTwoLoglik)) +
-  geom_histogram(aes(y = ..density..), bins = 30, color="black", fill="white") +
-  facet_wrap(~fit, scales = 'free', nrow = 1) +
-  labs(x = '-2logL', y = 'Density')
-histall.negTwoLogLik
+  geom_histogram(aes(y = after_stat(density)), bins = 30,
+                 color = 'black', fill = 'white') +
+  labs(x = '-2logL', y = 'Density') +
+  theme_bw()
 
-ggsave(plot = histall.negTwoLogLik, width = 10, height = 2, filename = 'nopp/fig/noppNegTwoLogLikHistAll.eps')
+ggsave(plot = hist.negTwoLogLik, width = 6, height = 3,
+       filename = paste0(path.fig, 'NegTwoLogLikHist.pdf'))
 
+# ── Posterior summary ───────────────────────────────────────────────────────
+summary.negTwoLogLik <- data.loglik %>%
+  summarise(
+    Mean = format(round(bm(negTwoLoglik)$est, 1), nsmall = 1),
+    SE   = format(round(bm(negTwoLoglik)$se,  1), nsmall = 1)
+  )
 
-hist.negTwoLogLik = data.loglik %>% 
-  filter(fit %in% newlabs[-1]) %>% 
-  filter(Iteration >= burn) %>%
-  ggplot(aes(x = negTwoLoglik)) +
-  geom_histogram(aes(y = ..density..), bins = 50, color="black", fill="white") +
-  geom_blank(data = dummy) +
-  facet_wrap(~fit, scales = 'free', nrow = 1) +
-  labs(x = '-2logL', y = 'Density')
-hist.negTwoLogLik
+print(summary.negTwoLogLik)
 
-ggsave(plot = hist.negTwoLogLik, width = 8, height = 2, filename = 'nopp/fig/noppNegTwoLogLikHist.eps')
-
-
-# plot.negTwoLogLik = ggarrange(trace.negTwoLogLik, hist.negTwoLogLik)
-# ggsave(plot = plot.negTwoLogLik, width = 10, height = 4, filename = 'nopp/fig/noppNegTwoLogLik.eps')
-
-
-
-
-data.loglik %>% 
-  group_by(fit) %>% 
-  summarise(Mean = format(round(bm(negTwoLoglik)[[1]], 1), nsmall = 1), 
-            SE = format(round(bm(negTwoLoglik)[[2]], 1), nsmall = 1)) %>% 
-  t() %>% 
-  xtable() %>% 
-  print(booktabs = F, include.colnames = F)
-  
-
+summary.negTwoLogLik %>%
+  xtable() %>%
+  print(booktabs = FALSE, include.rownames = FALSE,
+        file = paste0(path.fig, 'NegTwoLogLikSummary.tex'))
