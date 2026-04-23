@@ -38,19 +38,22 @@ buoy_settings <- list(
     call_file   = "ns_01_all.rds",
     noise_file  = "ns01_rms_data.rds",
     sst_col     = "NS01",
-    deploy_time = "2021-03-18 06:27:00"
+    deploy_time = "2021-03-18 06:27:00",
+    burn        = 50000
   ),
   ns02 = list(
     call_file   = "ns_02_all.rds",
     noise_file  = "ns02_rms_data.rds",
     sst_col     = "NS02",
-    deploy_time = "2021-03-10 17:29:00"
+    deploy_time = "2021-03-10 17:29:00",
+    burn        = 50000
   ),
   cox01 = list(
     call_file   = "cox_01_all.rds",
     noise_file  = "cox01_rms_data.rds",
     sst_col     = "COX01",
-    deploy_time = "2021-02-26 21:03:00"
+    deploy_time = "2021-02-26 21:03:00",
+    burn        = 50000
   )
 )
 
@@ -110,16 +113,21 @@ lb_eta_days <- 3 / 20   # lower bound for eta (set before ts is loaded)
 
 
 # ── Burn-in ───────────────────────────────────────────────────────────────────
-# Set ONCE after inspecting the loglik trace plot (03_loglikLGCPSE.R).
-# All downstream scripts (lam, rtct, num, sum*) read burn from here.
-burn_lgcp <- 50000
+# Per-buoy burn lives in buoy_settings[[buoy]]$burn; set after inspecting the
+# loglik trace plot (03_sumLoglik.R). burn_lgcp is a transitional alias so
+# legacy callers (04_*LGCPSE.R) keep working until Phase 5 rewires them.
+burn_lgcp <- buoy_cfg$burn
 
 
 # ── Output paths ─────────────────────────────────────────────────────────────
-# Fit files live on the HPC cluster; all other outputs are local.
-hpc_base   <- '/work/rss10/sne_ns01'
-local_base <- normalizePath('.')
-path_base  <- if (dir.exists(hpc_base)) hpc_base else local_base
+# Fit files have a three-tier fallback so the same config works everywhere:
+#   1. /work/rss10/sne_ns01     — primary cluster scratch (75-day wipe)
+#   2. /hpc/group/schicklab/... — persistent lab share (auto-archive target)
+#   3. local                    — laptop after rsync
+# All other outputs (loglik/lam/rtct/num/fig) are always local.
+hpc_base         <- '/work/rss10/sne_ns01'
+hpc_archive_base <- '/hpc/group/schicklab/sne_ns01'
+local_base       <- normalizePath('.')
 
 fold.data    <- 'data'
 fold.fit     <- 'fit'
@@ -127,10 +135,21 @@ fold.loglik  <- 'loglik'
 fold.lam     <- 'lam'
 fold.rtct    <- 'rtct'
 fold.num     <- 'num'
+fold.fig     <- 'fig'
+
+fit_base <- if (dir.exists(file.path(hpc_base, fold.fit, buoy))) {
+  hpc_base
+} else if (dir.exists(file.path(hpc_archive_base, fold.fit, buoy))) {
+  hpc_archive_base
+} else {
+  local_base
+}
+path_base <- fit_base   # legacy alias used by benchmark_*.R
 
 path.data    <- file.path(local_base, fold.data,   '')
-path.fit     <- file.path(path_base,  fold.fit,    buoy, '')
+path.fit     <- file.path(fit_base,   fold.fit,    buoy, '')
 path.loglik  <- file.path(local_base, fold.loglik, buoy, '')
 path.lam     <- file.path(local_base, fold.lam,    buoy, '')
 path.rtct    <- file.path(local_base, fold.rtct,   buoy, '')
 path.num     <- file.path(local_base, fold.num,    buoy, '')
+path.fig     <- file.path(local_base, fold.fig,    buoy, '')

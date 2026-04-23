@@ -1,10 +1,12 @@
 # =============================================================================
 # load_fit.R — Load an LGCPSE fit and prepare post-processing variables
 #
-# Source this AFTER setting `fiti` and `burn`:
+# Source this AFTER setting `fiti`:
 #   fiti <- fiti_lgcp
-#   burn <- burn_lgcp
 #   source('src/load_fit.R')
+#
+# Burn-in is read from buoy_cfg$burn (set in config.R). Override per-call by
+# setting `burn` before sourcing if you need a one-off value.
 #
 # Optional: set `thin` to an integer before sourcing to subsample the chain.
 # Useful for local testing when memory is limited (postBranching is dropped
@@ -13,7 +15,7 @@
 #   source('src/load_fit.R')
 #   rm(thin)       # reset for next source()
 #
-# Requires: path.data, path.fit, datai, fiti, burn (from config.R)
+# Requires: path.data, path.fit, datai, fiti, buoy_cfg (from config.R)
 #
 # Produces:
 #   data, noise                          — from data RData
@@ -22,6 +24,8 @@
 #   p, niters, ts, maxT, m
 #   betaInd, deltaInd, alphaInd, etaInd
 # =============================================================================
+
+if (!exists('burn') || is.null(burn)) burn <- buoy_cfg$burn
 
 load(file.path(path.data, paste0(datai, '.RData')))        # data, noise
 load(file.path(path.fit,  paste0(datai, fiti, '.RData')))  # postSamples, Xm, knts, ...

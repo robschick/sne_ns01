@@ -101,19 +101,19 @@ Drop `_harmonics_rho` suffix (no sweep → no disambiguation); add stage prefix.
 - [x] Commit: `"rename pipeline scripts with stage prefixes, drop sweep-era suffix"`.
 
 ### 4. Config + shared helpers
-- [ ] `config.R`:
-  - [ ] Add `burn = 50000` (or per-buoy values from traceplot inspection) inside
+- [x] `config.R`:
+  - [x] Add `burn = 50000` (or per-buoy values from traceplot inspection) inside
         each entry of `buoy_settings`.
-  - [ ] Add `path.fig <- file.path(local_base, 'fig', buoy, '')`.
-  - [ ] Add `hpc_archive_base <- '/hpc/group/schicklab/sne_ns01'`.
-  - [ ] Update `path_base` logic so `path.fit` falls through
+  - [x] Add `path.fig <- file.path(local_base, 'fig', buoy, '')`.
+  - [x] Add `hpc_archive_base <- '/hpc/group/schicklab/sne_ns01'`.
+  - [x] Update `path_base` logic so `path.fit` falls through
         `/work/rss10/ → /hpc/group/schicklab/ → local`.
-  - [ ] Ensure `fiti_lgcp <- 'LGCPSE'` (no `_5c4h`).
-- [ ] `src/RFtns.R`: move in `get_legend`, `hpd`, `hpd1`, `hpd2`, `bmmean`,
+  - [x] Ensure `fiti_lgcp <- 'LGCPSE'` (no `_5c4h`).
+- [x] `src/RFtns.R`: move in `get_legend`, `hpd`, `hpd1`, `hpd2`, `bmmean`,
       `lb90`, `ub90`, `lb95`, `ub95`. Add `fmt_period(minutes)` returning
       `"1 wk"` / `"2 wk"` / `"1 mo"` / `"2 mo"` / etc. from a period in minutes.
-- [ ] `src/load_fit.R`: pull `burn` from `buoy_cfg$burn`.
-- [ ] Commit: `"per-buoy burn, path.fig, fit-archive fallback, consolidated helpers"`.
+- [x] `src/load_fit.R`: pull `burn` from `buoy_cfg$burn`.
+- [x] Commit: `"per-buoy burn, path.fig, fit-archive fallback, consolidated helpers"`.
 
 ### 5. Cluster script wiring (rtct, num, lam, fit, loglik — all already config-driven)
 

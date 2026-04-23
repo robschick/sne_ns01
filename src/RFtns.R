@@ -1,3 +1,55 @@
+# =============================================================================
+# Shared post-processing helpers
+#
+# Callers must already have loaded coda (HPDinterval, as.mcmc), batchmeans (bm),
+# and ggplot2/grid (ggplot_gtable, ggplot_build) before invoking these.
+# =============================================================================
+
+# Extract the legend grob from a ggplot for manual placement.
+get_legend <- function(myggplot) {
+  tmp <- ggplot_gtable(ggplot_build(myggplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  tmp$grobs[[leg]]
+}
+
+# Batch-means posterior mean, formatted to a fixed number of decimals.
+bmmean <- function(x, digits = 0) {
+  format(round(bm(x)$est, digits), nsmall = digits)
+}
+
+# HPD interval as a "(lo, hi)" string, rounded and formatted.
+hpd <- function(x, prob = 0.95, digits = 0) {
+  ci <- HPDinterval(as.mcmc(x), prob = prob)
+  paste0('(',
+         format(round(ci[1], digits), nsmall = digits), ', ',
+         format(round(ci[2], digits), nsmall = digits), ')')
+}
+
+# Numeric HPD bounds (rounded). Used when the lo/hi need to flow into other
+# computations rather than being printed.
+hpd1 <- function(x, prob = 0.95, digits = 2) round(HPDinterval(as.mcmc(x), prob = prob)[1], digits)
+hpd2 <- function(x, prob = 0.95, digits = 2) round(HPDinterval(as.mcmc(x), prob = prob)[2], digits)
+
+# Raw (unrounded) HPD bounds at fixed probabilities.
+lb95 <- function(x) HPDinterval(as.mcmc(x), prob = 0.95)[1]
+ub95 <- function(x) HPDinterval(as.mcmc(x), prob = 0.95)[2]
+lb90 <- function(x) HPDinterval(as.mcmc(x), prob = 0.90)[1]
+ub90 <- function(x) HPDinterval(as.mcmc(x), prob = 0.90)[2]
+
+# Format a harmonic period (in minutes) as "1 wk", "2 mo", etc. — drives
+# predictor labels in the harmonic-effects plots so they cannot drift out of
+# sync with harm_periods_lgcp.
+fmt_period <- function(minutes) {
+  week  <- 7  * 24 * 60   # 10,080
+  month <- 30 * 24 * 60   # 43,200
+  vapply(minutes, function(m) {
+    if      (m %% month == 0) sprintf('%g mo',  m / month)
+    else if (m %% week  == 0) sprintf('%g wk',  m / week)
+    else                      sprintf('%g min', m)
+  }, character(1))
+}
+
+
 simulateNHPP = function(intensity_ftn, maxintensity, maxTime){
   points = c()
   newTime = 0
