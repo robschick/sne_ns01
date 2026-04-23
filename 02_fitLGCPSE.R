@@ -156,7 +156,7 @@ for(i in (start+1):length(outers) ){
   COVdelta = dummy$COVdelta
   COVeta = dummy$COVeta
   
-  save(rtime, postSamples, postBranching, postWm, Accprob, beta, delta, alpha, eta, 
+  save(rtime, postSamples, postBranching, postWm, Accprob, beta, delta, alpha, eta,
        lb_eta, ub_eta, shape_alpha, rate_alpha,
        sigma2, adapIter, Wm, COVbeta, COVdelta, COVeta,
        updateCOV, adaptInterval, adaptFactorExponent, adapIter,
@@ -165,3 +165,11 @@ for(i in (start+1):length(outers) ){
 }
 
 
+# Mirror the completed fit to the persistent lab share. /work/rss10/ is wiped
+# after 75 days; the schicklab share is not. No-op when the target is not
+# writable (e.g., laptop runs).
+archive_path <- file.path(hpc_archive_base, fold.fit, buoy)
+dir.create(archive_path, recursive = TRUE, showWarnings = FALSE)
+ok <- file.copy(filename, archive_path, overwrite = TRUE)
+cat(sprintf("Archive %s -> %s: %s\n", filename, archive_path,
+            if (isTRUE(ok)) "OK" else "SKIPPED"))

@@ -135,11 +135,13 @@ phase is just the glue:
 - [x] Commit: `"wire per-buoy burn + BUOY env to cluster scripts"`.
 
 ### 6. Fit archive auto-copy
-- [ ] At end of `02_fitLGCPSE.R`, after final `save(...)`:
-      `dir.create(archive_path, recursive = TRUE, showWarnings = FALSE)` then
-      `file.copy(filename, archive_path, overwrite = TRUE)` where
-      `archive_path <- file.path(hpc_archive_base, 'fit', buoy)`.
-- [ ] Commit: `"auto-copy completed fits to persistent schicklab share"`.
+- [x] At end of `02_fitLGCPSE.R`, after the MCMC loop: `dir.create(archive_path,
+      recursive = TRUE, showWarnings = FALSE)` then `file.copy(filename,
+      archive_path, overwrite = TRUE)` where `archive_path <-
+      file.path(hpc_archive_base, fold.fit, buoy)`. `cat()`s a one-line status
+      so the job log records whether the copy landed (OK on the cluster,
+      SKIPPED on laptop runs where the schicklab share isn't mounted).
+- [x] Commit: `"auto-copy completed fits to persistent schicklab share"`.
 
 ### 7. Sum-script refactors (group by 2–3 per commit, or one per)
 For each of `03_sumLoglik.R`, `05_sumDIC.R`, `05_sumEstM4.R`, `05_sumRTCT.R`,
