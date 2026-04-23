@@ -110,7 +110,7 @@ lb_eta_days <- 3 / 20   # lower bound for eta (set before ts is loaded)
 
 
 # ── Burn-in ───────────────────────────────────────────────────────────────────
-# Set ONCE after inspecting the loglik trace plot (loglikLGCPSE.R).
+# Set ONCE after inspecting the loglik trace plot (03_loglikLGCPSE.R).
 # All downstream scripts (lam, rtct, num, sum*) read burn from here.
 burn_lgcp <- 50000
 

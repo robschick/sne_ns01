@@ -84,21 +84,21 @@ a grill-me session — decisions captured below.
 ### 3. Rename pipeline scripts
 Drop `_harmonics_rho` suffix (no sweep → no disambiguation); add stage prefix.
 
-- [ ] `git mv data.R 01_data.R`
-- [ ] `git mv fitLGCPSE.R 02_fitLGCPSE.R`
-- [ ] `git mv loglikLGCPSE.R 03_loglikLGCPSE.R`
-- [ ] `git mv sumLoglik.R 03_sumLoglik.R`
-- [ ] `git mv rtct.R 04_rtctLGCPSE.R`
-- [ ] `git mv lamLGCPSE.R 04_lamLGCPSE.R`
-- [ ] `git mv num.R 04_numLGCPSE.R`
-- [ ] `git mv sumDIC_harmonics_rho.R 05_sumDIC.R`
-- [ ] `git mv sumEstM4_harmonics_rho.R 05_sumEstM4.R`
-- [ ] `git mv sumRTCT_harmonics_rho.R 05_sumRTCT.R`
-- [ ] `git mv sumXB_harmonics_rho.R 05_sumXB.R`
-- [ ] `git mv sumNum.R 05_sumNum.R`
-- [ ] `git mv sumLam.R 05_sumLam.R`
-- [ ] Update any cross-references in `aci_*.sh` / docs / comments.
-- [ ] Commit: `"rename pipeline scripts with stage prefixes, drop sweep-era suffix"`.
+- [x] `git mv data.R 01_data.R`
+- [x] `git mv fitLGCPSE.R 02_fitLGCPSE.R`
+- [x] `git mv loglikLGCPSE.R 03_loglikLGCPSE.R`
+- [x] `git mv sumLoglik.R 03_sumLoglik.R`
+- [x] `git mv rtct.R 04_rtctLGCPSE.R`
+- [x] `git mv lamLGCPSE.R 04_lamLGCPSE.R`
+- [x] `git mv num.R 04_numLGCPSE.R`
+- [x] `git mv sumDIC_harmonics_rho.R 05_sumDIC.R`
+- [x] `git mv sumEstM4_harmonics_rho.R 05_sumEstM4.R`
+- [x] `git mv sumRTCT_harmonics_rho.R 05_sumRTCT.R`
+- [x] `git mv sumXB_harmonics_rho.R 05_sumXB.R`
+- [x] `git mv sumNum.R 05_sumNum.R`
+- [x] `git mv sumLam.R 05_sumLam.R`
+- [x] Update any cross-references in `aci_*.sh` / docs / comments.
+- [x] Commit: `"rename pipeline scripts with stage prefixes, drop sweep-era suffix"`.
 
 ### 4. Config + shared helpers
 - [ ] `config.R`:

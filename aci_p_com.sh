@@ -16,4 +16,4 @@ module load PROJ/6.3.2-rhel8
 module load GDAL/3.2.1-rhel8
 module load GEOS/3.9.1-rhel8
 module load R/4.1.1-rhel8
-Rscript sumEstM4_harmonics_rho.R
+Rscript 05_sumEstM4.R

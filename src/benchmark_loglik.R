@@ -1,7 +1,7 @@
 # =============================================================================
 # benchmark_loglik.R — Post-hoc loglikelihood replay for benchmark combos
 #
-# Mirrors the loop in loglikLGCPSE.R but iterates over the benchmark grid
+# Mirrors the loop in 03_loglikLGCPSE.R but iterates over the benchmark grid
 # (fit/<buoy>/benchmark/*/phase2_fit.RData) and keeps the FULL chain — no
 # burn-in is applied here, since we want to see where the LL stabilizes.
 #

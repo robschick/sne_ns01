@@ -240,7 +240,7 @@ if (!is.null(bench_niters_override)) {
 cat(sprintf("\n=== Phase 2: Full chain (%d iterations, ~%.1f days) ===\n",
             niters, (niters * time_per_iter) / (24 * 3600)))
 
-# Checkpoint loop: save every 1000 iterations (same as fitLGCPSE.R)
+# Checkpoint loop: save every 1000 iterations (same as 02_fitLGCPSE.R)
 outers <- c(0, seq(1000, niters, by = 1000))
 
 # Accumulate from Phase 1 results

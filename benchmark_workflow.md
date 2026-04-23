@@ -29,7 +29,7 @@ Harmonics adapt to the analysis window length (minimum 3 full cycles required):
 The data file `data/nopp.RData` should already exist. If not, regenerate it:
 
 ```bash
-Rscript data.R
+Rscript 01_data.R
 ```
 
 Verify:

@@ -112,7 +112,7 @@ fig/benchmark/
 ### What is NOT changed
 
 - The C++ MCMC sampler (`RcppFtns.cpp`) is not modified
-- The existing `fitLGCPSE.R` and `config.R` are not modified
+- The existing `02_fitLGCPSE.R` and `config.R` are not modified
 - Priors, adaptive MCMC settings, and initial value strategy remain identical across all runs
 
 ## Testing Decisions
