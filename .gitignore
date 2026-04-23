@@ -9,3 +9,5 @@ num/
 rtct/
 *.tex
 .Rproj.user
+.DS_Store
+.Rhistory
