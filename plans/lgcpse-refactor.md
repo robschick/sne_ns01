@@ -176,9 +176,9 @@ workflow), then `sumDIC + sumEstM4 + sumNum` (tables), then
 
 ### 8. README.md at repo root
 Sections:
-- [ ] Prerequisite files in `data/` per buoy (`{buoy}_rms_data.rds`,
+- [x] Prerequisite files in `data/` per buoy (`{buoy}_rms_data.rds`,
       `{buoy}_all.rds`, SST CSV under `data/sst/`).
-- [ ] Pipeline stages:
+- [x] Pipeline stages:
   1. Local: `Rscript 01_data.R --buoy=ns01`.
   2. Cluster: `sbatch --export=ALL,BUOY=ns01 aci_fit.sh` (and loglik).
   3. Local interactive: `Rscript 03_sumLoglik.R --buoy=ns01` → inspect
@@ -186,11 +186,11 @@ Sections:
      `config.R` → commit.
   4. Cluster: submit `04_rtctLGCPSE.R`, `04_lamLGCPSE.R`, `04_numLGCPSE.R`.
   5. Local: run all `05_sum*.R` scripts after rsyncing outputs from cluster.
-- [ ] Explicit note on `/work/rss10/` 75-day wipe, the auto-copy to
+- [x] Explicit note on `/work/rss10/` 75-day wipe, the auto-copy to
       `/hpc/group/schicklab/sne_ns01/fit/{buoy}/`, and the recommended
       `rsync` command to pull fits down to laptop.
-- [ ] Where outputs land: `fig/{buoy}/` (gitignored; regenerate from fits).
-- [ ] Commit: `"add README with end-to-end workflow and HPC wipe caveat"`.
+- [x] Where outputs land: `fig/{buoy}/` (gitignored; regenerate from fits).
+- [x] Commit: `"add README with end-to-end workflow and HPC wipe caveat"`.
 
 ### 9. Final sweep commit
 - [ ] `"complete LGCPSE pipeline refactor"` — summary commit message
