@@ -114,9 +114,8 @@ lb_eta_days <- 3 / 20   # lower bound for eta (set before ts is loaded)
 
 # ── Burn-in ───────────────────────────────────────────────────────────────────
 # Per-buoy burn lives in buoy_settings[[buoy]]$burn; set after inspecting the
-# loglik trace plot (03_sumLoglik.R). burn_lgcp is a transitional alias so
-# legacy callers (04_*LGCPSE.R) keep working until Phase 5 rewires them.
-burn_lgcp <- buoy_cfg$burn
+# loglik trace plot (03_sumLoglik.R). Post-processing scripts read it via
+# load_fit.R, which falls back to buoy_cfg$burn when `burn` is unset.
 
 
 # ── Output paths ─────────────────────────────────────────────────────────────

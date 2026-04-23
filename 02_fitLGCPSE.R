@@ -4,9 +4,6 @@ library(tidyverse); library(foreach)
 
 source('src/config.R')
 
-# runID = as.integer(Sys.getenv("SLURM_ARRAY_TASK_ID"))
-# runID = 1
-
 path.cpp = 'src/RcppFtns.cpp'
 
 fiti = fiti_lgcp

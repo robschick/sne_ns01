@@ -5,13 +5,9 @@ library(tidyverse)
 
 source('src/config.R')
 
-runID = as.integer(Sys.getenv("SLURM_ARRAY_TASK_ID"))
-# runID = 1
-
 path.cpp = 'src/RcppFtns.cpp'
 
 fiti = fiti_lgcp
-burn = burn_lgcp
 
 ifelse(!dir.exists(path.lam), dir.create(path.lam, recursive = T), FALSE)
 

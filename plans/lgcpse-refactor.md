@@ -120,12 +120,19 @@ Drop `_harmonics_rho` suffix (no sweep → no disambiguation); add stage prefix.
 All five cluster scripts are already config-driven after Phase 2 cleanup. This
 phase is just the glue:
 
-- [ ] Thread `buoy_cfg$burn` (added in Phase 4) through `04_rtctLGCPSE.R` and
-      `04_numLGCPSE.R` — they currently set `burn = burn_lgcp`.
-- [ ] `aci_*.sh` cluster scripts: pass `--export=ALL,BUOY=ns01` (or equivalent)
-      so `config.R` resolves the buoy. Submit one job per buoy; drop SLURM
-      array indices.
-- [ ] Commit: `"wire per-buoy burn + BUOY env to cluster scripts"`.
+- [x] Drop the `burn = burn_lgcp` line from `03_loglikLGCPSE.R`,
+      `04_rtctLGCPSE.R`, `04_numLGCPSE.R`, `04_lamLGCPSE.R`. `load_fit.R` now
+      pulls `buoy_cfg$burn` by default, so the explicit assignment was
+      redundant. Removed the `burn_lgcp` transitional alias from `config.R`
+      and the sweep-era `runID`/`SLURM_ARRAY_TASK_ID` scaffolding from the
+      five pipeline scripts.
+- [x] `aci_*.sh` cluster scripts: renamed broken `aci_com.sh` → `aci_fit.sh`
+      (now runs `02_fitLGCPSE.R`); created `aci_ll.sh`, `aci_rtct.sh`,
+      `aci_lam.sh`, `aci_num.sh`. All are `--export=ALL,BUOY=...`-driven, no
+      SLURM array, one job per buoy. Benchmark workflow (`aci_benchmark.sh`,
+      `aci_loglik.sh`, `aci_loglik_agg.sh`) untouched — hence `aci_ll.sh`
+      rather than `aci_loglik.sh` to avoid the collision.
+- [x] Commit: `"wire per-buoy burn + BUOY env to cluster scripts"`.
 
 ### 6. Fit archive auto-copy
 - [ ] At end of `02_fitLGCPSE.R`, after final `save(...)`:
