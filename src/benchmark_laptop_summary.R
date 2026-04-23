@@ -2,7 +2,8 @@
 # benchmark_laptop_summary.R — Assemble Phase 1 laptop timing into markdown
 #
 # Usage:
-#   Rscript src/benchmark_laptop_summary.R
+#   Rscript src/benchmark_laptop_summary.R                # defaults to ns01
+#   Rscript src/benchmark_laptop_summary.R --buoy=ns02
 # =============================================================================
 
 source('src/config.R')
@@ -17,7 +18,7 @@ results <- list()
 for (i in 1:nrow(benchmark_grid)) {
   row   <- benchmark_grid[i, ]
   label <- paste0("rho", row$rho, "_sback", sprintf("%03d", row$sback))
-  fpath <- file.path('fit', 'benchmark', label, 'phase1_timing.RData')
+  fpath <- file.path('fit', buoy, 'benchmark', label, 'phase1_timing.RData')
 
   if (file.exists(fpath)) {
     load(fpath)
@@ -31,7 +32,7 @@ if (length(results) == 0) stop("No results found.")
 
 # Build markdown
 lines <- c(
-  "# Laptop Benchmark Results (1-month subset)",
+  sprintf("# Laptop Benchmark Results — %s (1-month subset)", toupper(buoy)),
   "",
   sprintf("**Date:** %s", Sys.Date()),
   sprintf("**Data:** %d events, %.1f days",
@@ -67,6 +68,6 @@ lines <- c(lines, "",
   ""
 )
 
-outfile <- "benchmark_laptop_results.md"
+outfile <- sprintf("benchmark_laptop_results_%s.md", buoy)
 writeLines(lines, outfile)
 cat(sprintf("Summary written to %s\n", outfile))

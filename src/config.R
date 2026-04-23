@@ -3,16 +3,67 @@
 #
 # Source this file at the top of every script:
 #   source('src/config.R')
+#
+# Buoy selection: set via --buoy=ns01 on the command line, or defaults to 'ns01'.
 # =============================================================================
 
 
+# ── Buoy selection ───────────────────────────────────────────────────────────
+# Resolve from command-line arg, environment variable, or default.
+resolve_buoy <- function() {
+  args <- commandArgs(trailingOnly = TRUE)
+  for (i in seq_along(args)) {
+    if (grepl("^--buoy=", args[i])) {
+      return(tolower(sub("^--buoy=", "", args[i])))
+    } else if (args[i] == "--buoy" && i < length(args)) {
+      return(tolower(args[i + 1]))
+    }
+  }
+  buoy_env <- Sys.getenv("BUOY", unset = NA)
+  if (!is.na(buoy_env)) return(tolower(buoy_env))
+  return("ns01")
+}
+
+buoy <- resolve_buoy()
+stopifnot(buoy %in% c("ns01", "ns02", "cox01"))
+cat(sprintf("Buoy: %s\n", buoy))
+
+
+# ── Buoy-specific settings ──────────────────────────────────────────────────
+# Raw data files and deployment origins differ per buoy.
+# Everything else (analysis window, priors, MCMC settings) is shared.
+
+buoy_settings <- list(
+  ns01 = list(
+    call_file   = "ns_01_all.rds",
+    noise_file  = "ns01_rms_data.rds",
+    sst_col     = "NS01",
+    deploy_time = "2021-03-18 06:27:00"
+  ),
+  ns02 = list(
+    call_file   = "ns_02_all.rds",
+    noise_file  = "ns02_rms_data.rds",
+    sst_col     = "NS02",
+    deploy_time = "2021-03-10 17:29:00"
+  ),
+  cox01 = list(
+    call_file   = "cox_01_all.rds",
+    noise_file  = "cox01_rms_data.rds",
+    sst_col     = "COX01",
+    deploy_time = "2021-02-26 21:03:00"
+  )
+)
+
+buoy_cfg <- buoy_settings[[buoy]]
+
+
 # ── Analysis window ───────────────────────────────────────────────────────────
-# std is the time origin: ts = 0 at std, ts in minutes.
-# analysis_end filters the upper bound; set to NULL to use all available data.
+# Standardized across all buoys: Oct 1 2021 – Apr 30 2022.
+# ts = 0 at std, ts in minutes.
 # Note: timestamps are labeled UTC but are actually EST.
 std_str       <- '2021-10-01 00:00:00'
 std           <- as.POSIXct(std_str, tz = 'UTC')
-analysis_end  <- as.POSIXct('2022-04-30 04:01:00', tz = 'UTC')  # full NS01 extent
+analysis_end  <- as.POSIXct('2022-04-30 04:01:00', tz = 'UTC')
 
 # Harmonic anchor: minutes elapsed since midnight on the start date.
 # Derived from std so it stays in sync — 0 min for a midnight origin.
@@ -23,7 +74,7 @@ harm_month_unit <- 30 * 24 * 60    # 43,200 min per "month"
 
 
 # ── Model identity ────────────────────────────────────────────────────────────
-datai     <- 'nopp'
+datai     <- buoy
 fiti_lgcp <- 'LGCPSE'
 fiti_nhpp <- 'NHPPSE'
 
@@ -84,8 +135,8 @@ fold.rtct    <- 'rtct'
 fold.num     <- 'num'
 
 path.data    <- file.path(local_base, fold.data,   '')
-path.fit     <- file.path(path_base,  fold.fit,    '')
-path.loglik  <- file.path(local_base, fold.loglik, '')
-path.lam     <- file.path(local_base, fold.lam,    '')
-path.rtct    <- file.path(local_base, fold.rtct,   '')
-path.num     <- file.path(local_base, fold.num,    '')
+path.fit     <- file.path(path_base,  fold.fit,    buoy, '')
+path.loglik  <- file.path(local_base, fold.loglik, buoy, '')
+path.lam     <- file.path(local_base, fold.lam,    buoy, '')
+path.rtct    <- file.path(local_base, fold.rtct,   buoy, '')
+path.num     <- file.path(local_base, fold.num,    buoy, '')

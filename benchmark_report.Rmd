@@ -1,0 +1,243 @@
+---
+title: "GP Grid Resolution Benchmark — NS01"
+subtitle: "LGCP + Hawkes Self-Exciting Point Process"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    fig_caption: true
+    latex_engine: xelatex
+geometry: margin=1in
+header-includes:
+  - \usepackage{booktabs}
+  - \usepackage{longtable}
+  - \usepackage{float}
+  - \floatplacement{figure}{H}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE,
+                      fig.align = "center", out.width = "100%")
+library(knitr)
+library(kableExtra)
+
+fig_dir <- "fig/ns01/benchmark"
+timing   <- read.csv(file.path(fig_dir, "timing_summary.csv"))
+diag     <- read.csv(file.path(fig_dir, "convergence_diagnostics.csv"))
+post     <- read.csv(file.path(fig_dir, "posterior_summary.csv"))
+```
+
+# Overview
+
+This report summarizes a benchmarking experiment on the LGCP + self-exciting (Hawkes) point process model applied to NS01 whale call data (Oct 2021 -- Apr 2022, ~22,800 events over ~211 days). The goal is to characterize the tradeoff between GP grid resolution and computational cost, and to determine whether coarse grid resolution causes unmodeled background temporal variation to leak into the self-exciting component --- inflating the branching ratio ($\alpha$) and creating a false appearance of social communication.
+
+## Experiment design
+
+We fix two values of the GP range parameter $\rho$ (30 and 60 minutes) and vary the grid spacing `sback` across four levels each, for 8 total configurations:
+
+```{r grid}
+grid <- data.frame(
+  Combo    = 1:8,
+  `rho (min)` = c(60, 60, 60, 60, 30, 30, 30, 30),
+  `sback (min)` = c(30, 60, 120, 180, 15, 30, 60, 90),
+  `Eff. range (min)` = c(180, 180, 180, 180, 90, 90, 90, 90),
+  check.names = FALSE
+)
+kable(grid, booktabs = TRUE, caption = "Experiment grid. Effective range = $3\\rho$.") %>%
+  kable_styling(latex_options = "hold_position") %>%
+  pack_rows("rho = 60 min", 1, 4) %>%
+  pack_rows("rho = 30 min", 5, 8)
+```
+
+**Constraints enforced:**
+
+- `sback` $\leq 3\rho$ (GP must correlate across adjacent grid cells)
+- $3\rho < 1{,}440$ min (effective range shorter than the daily harmonic period)
+
+**Harmonics:** 5 periods (daily, weekly, biweekly, monthly, bimonthly), each generating one $\sin$ and one $\cos$ column. The design matrix has $p = 13$ columns (intercept + noise + SST + 10 harmonic terms).
+
+## Two-phase protocol
+
+- **Phase 1** (1,000 iterations): Run locally on a laptop to characterize per-iteration cost and project feasibility within 3- and 5-day wall-clock budgets on the cluster.
+- **Phase 2** (100,000 iterations requested): Full MCMC chain for posterior comparison. Jobs were submitted to the Duke Compute Cluster via SLURM array. All 8 jobs were cancelled at the 5-day wall-clock limit, yielding 58,000--80,000 iterations depending on the combo.
+
+
+# Phase 1: Computational cost
+
+```{r timing-table}
+timing_tab <- timing[, c("combo_id", "rho", "sback", "m", "time_per_iter",
+                          "time_cov_matrix", "iters_per_hour")]
+timing_tab$time_per_iter  <- round(timing_tab$time_per_iter, 2)
+timing_tab$time_cov_matrix <- round(timing_tab$time_cov_matrix, 1)
+timing_tab$iters_per_hour  <- round(timing_tab$iters_per_hour)
+names(timing_tab) <- c("Combo", "rho", "sback", "Knots (m)",
+                        "sec/iter", "Cov matrix (sec)", "Iters/hr")
+kable(timing_tab, booktabs = TRUE,
+      caption = "Phase 1 timing (1,000 iterations on laptop).") %>%
+  kable_styling(latex_options = "hold_position")
+```
+
+```{r timing-plot, fig.cap="Per-iteration cost increases superlinearly with knot count, driven by the covariance matrix operations and event likelihood evaluation.", fig.height=4}
+knitr::include_graphics(file.path(fig_dir, "timing_comparison.pdf"))
+```
+
+```{r budget-plot, fig.cap="Projected iterations within time budgets based on Phase 1 laptop timing. These projections assumed the laptop per-iteration rate would hold on the cluster; actual cluster throughput was approximately 5x slower due to GPU-class node assignment (see Phase 2 results). The dashed red line marks the 150k iteration target.", fig.height=3.5}
+knitr::include_graphics(file.path(fig_dir, "budget_feasibility.pdf"))
+```
+
+**Key observations:**
+
+- The covariance matrix setup cost scales as $O(m^3)$: 7,442 sec (~2 hrs) for 20k knots vs. 6 sec for 1,690 knots. This is a one-time cost per chain.
+- Per-iteration cost on the laptop ranges from 5.7 to 7.1 sec/iter, projecting that all combos could reach 150k iterations within a 3-day wall-clock budget.
+- Actual cluster throughput was approximately 5$\times$ slower due to GPU-class node assignment (CPU-only code running on nodes with slower CPUs). As a result, Phase 2 achieved only 58,000--80,000 iterations before hitting the 5-day SLURM wall-clock limit.
+
+
+# Phase 2: Convergence diagnostics
+
+## Trace plots
+
+```{r trace-plots, fig.cap="Trace plots for alpha, delta, and eta across all 8 configurations. Alpha converges quickly and mixes well. Delta exhibits high autocorrelation across all combos. Eta is intermediate.", fig.height=3.5}
+knitr::include_graphics(file.path(fig_dir, "trace_plots.pdf"))
+```
+
+All three parameters settle within the first 15--20k iterations, so the $\frac{1}{3}$ burn-in (discarding the first 19k--27k samples) is adequate. However, the mixing quality varies dramatically by parameter.
+
+## Effective sample size and Geweke diagnostics
+
+```{r diag-table}
+diag_tab <- diag[, c("combo_id", "rho", "sback", "parameter",
+                      "total_iters", "post_burn_n", "ess", "geweke_z", "geweke_p")]
+names(diag_tab) <- c("Combo", "rho", "sback", "Param",
+                      "Total iters", "Post burn-in", "ESS", "Geweke z", "Geweke p")
+
+# Create combo group labels
+combo_labels <- paste0("Combo ", diag_tab$Combo,
+                       " (rho=", diag_tab$rho, ", sback=", diag_tab$sback, ")")
+
+# Remove redundant columns since combo info is in group headers
+diag_display <- diag_tab[, c("Param", "Total iters", "Post burn-in",
+                              "ESS", "Geweke z", "Geweke p")]
+
+kable(diag_display, booktabs = TRUE, row.names = FALSE,
+      caption = "Convergence diagnostics (post burn-in = first 1/3 discarded).") %>%
+  kable_styling(latex_options = c("hold_position"), font_size = 9) %>%
+  pack_rows(combo_labels[1], 1, 3) %>%
+  pack_rows(combo_labels[4], 4, 6) %>%
+  pack_rows(combo_labels[7], 7, 9) %>%
+  pack_rows(combo_labels[10], 10, 12) %>%
+  pack_rows(combo_labels[13], 13, 15) %>%
+  pack_rows(combo_labels[16], 16, 18) %>%
+  pack_rows(combo_labels[19], 19, 21) %>%
+  pack_rows(combo_labels[22], 22, 24)
+```
+
+```{r ess-plot, fig.cap="ESS by configuration. Alpha is marginal to adequate; delta is far below the 400 threshold across all combos; eta is intermediate.", fig.height=5}
+knitr::include_graphics(file.path(fig_dir, "ess_comparison.pdf"))
+```
+
+**Summary by parameter:**
+
+| Parameter | ESS range | Mixing | Interpretation |
+|-----------|-----------|--------|----------------|
+| $\alpha$ (branching ratio) | 320--568 | Good | Adequate for inference |
+| $\delta$ (log GP variance) | 18--113 | Very poor | High autocorrelation; ~1 independent sample per 1,000 iterations |
+| $\eta$ (triggering decay) | 28--345 | Moderate | Below target for most combos |
+
+The low ESS for $\delta$ is structural, not a chain-length issue. $\delta$ and the GP realization $\mathbf{W}$ are jointly sampled via single-site updates, creating strong posterior correlation. Achieving ESS $> 400$ for $\delta$ would require ~600k total iterations ($\approx$ 40 days per combo at the observed rate). This mixing limitation is worth noting in the methods paper as a known feature of GP models with Metropolis-Hastings samplers.
+
+The Geweke $p$-values are near zero for most combos, reflecting the slow mixing rather than non-convergence --- the trace plots confirm the chains have reached stationarity.
+
+
+# Phase 2: Posterior comparison
+
+## Key parameters across grid resolutions
+
+```{r key-params-table}
+key <- post[post$parameter %in% c("alpha", "delta", "eta"),
+            c("combo_id", "rho", "sback", "parameter", "mean", "median", "lb95", "ub95")]
+key$mean   <- round(key$mean, 4)
+key$median <- round(key$median, 4)
+key$lb95   <- round(key$lb95, 4)
+key$ub95   <- round(key$ub95, 4)
+
+# Create combo group labels
+key_labels <- paste0("Combo ", key$combo_id,
+                     " (rho=", key$rho, ", sback=", key$sback, ")")
+
+# Display without redundant columns
+key_display <- key[, c("parameter", "mean", "median", "lb95", "ub95")]
+names(key_display) <- c("Param", "Mean", "Median", "95% LB", "95% UB")
+
+kable(key_display, booktabs = TRUE, row.names = FALSE,
+      caption = "Posterior summaries for key parameters (post burn-in).") %>%
+  kable_styling(latex_options = c("hold_position"), font_size = 9) %>%
+  pack_rows(key_labels[1], 1, 3) %>%
+  pack_rows(key_labels[4], 4, 6) %>%
+  pack_rows(key_labels[7], 7, 9) %>%
+  pack_rows(key_labels[10], 10, 12) %>%
+  pack_rows(key_labels[13], 13, 15) %>%
+  pack_rows(key_labels[16], 16, 18) %>%
+  pack_rows(key_labels[19], 19, 21) %>%
+  pack_rows(key_labels[22], 22, 24)
+```
+
+```{r param-plot, fig.cap="Posterior means and HPD intervals for alpha, eta, and delta. Alpha is stable across sback for rho=60 (plateaus at sback=60). The rho=30 arm shows more sensitivity, with alpha increasing monotonically from sback=15 to sback=90.", fig.height=6}
+knitr::include_graphics(file.path(fig_dir, "parameter_comparison.pdf"))
+```
+
+## Covariate effects
+
+```{r cov-plot, fig.cap="Covariate and harmonic coefficient posteriors. Covariate effects are stable across grid resolutions.", fig.height=5.5}
+knitr::include_graphics(file.path(fig_dir, "covariate_comparison.pdf"))
+```
+
+
+# Signal leakage analysis
+
+```{r leakage-plot, fig.cap="Alpha (branching ratio) vs. delta (log GP variance). Each point is one combo's posterior mean. Dotted paths connect combos within each rho arm, ordered from finest (bottom-left) to coarsest (top-right) sback.", fig.height=4.5}
+knitr::include_graphics(file.path(fig_dir, "signal_leakage.pdf"))
+```
+
+## Interpretation
+
+The signal leakage plot is the core diagnostic for the central hypothesis: *does coarse GP grid resolution cause unmodeled background variation to inflate the self-exciting component?*
+
+**Both $\alpha$ and $\delta$ increase as the grid coarsens** (moving from bottom-left to top-right along each path). This reflects two complementary effects:
+
+1. **$\delta$ increases** because a coarser GP (fewer knots) needs higher marginal variance to fit the same data --- each knot must "work harder."
+2. **$\alpha$ increases** because fine-scale temporal structure that the GP can no longer resolve gets absorbed by the Hawkes triggering function --- this is the leakage.
+
+**The effect is real but modest.** Across a 12$\times$ range of grid densities (sback = 15 to 180 min), $\alpha$ ranges from 0.186 to 0.226 --- a shift of $\sim$0.04 on a $[0, 1]$ parameter. The ecological interpretation (roughly 20\% of calls are triggered by preceding calls) does not change qualitatively.
+
+**The two $\rho$ arms tell different stories:**
+
+- **$\rho = 60$:** $\alpha$ plateaus at sback = 60 min ($\alpha \approx 0.225$). Refining the grid beyond this point has no effect --- the GP's effective range (180 min) is long enough that sback = 60 already provides $\geq 3$ knots per effective range.
+- **$\rho = 30$:** $\alpha$ increases monotonically from 0.186 (sback = 15) to 0.224 (sback = 90). The shorter effective range (90 min) makes the GP more sensitive to grid spacing.
+
+**$\rho$ has a larger effect on $\alpha$ than sback.** At the same grid spacing (sback = 30), switching from $\rho = 30$ to $\rho = 60$ increases $\alpha$ by 0.019 (0.196 $\to$ 0.215). This is because a longer correlation range smooths over more fine-scale variation, leaving more residual structure for the Hawkes component to absorb. The choice of $\rho$ is a modeling decision about what temporal scale counts as "background" vs. "foreground."
+
+
+# Recommendation
+
+Based on these results, **$\rho = 60$, sback = 60** is the recommended configuration for production runs:
+
+1. **$\alpha$ has plateaued** --- going finer than sback = 60 does not change the posterior for the key excitation parameters.
+2. **Best convergence** --- this combo has the highest $\alpha$ ESS (568) and good $\eta$ ESS (212).
+3. **Computationally efficient** --- ~5,000 knots; moderate cov matrix cost (159 sec); ~545 iters/hr on DCC.
+4. **Ecologically interpretable** --- the effective range of 180 min (3 hrs) is a reasonable scale for background temporal variation in whale calling behavior.
+
+For the methods paper, the more interesting discussion point is the sensitivity to $\rho$ rather than sback. The rho = 30 arm's lower $\alpha$ at fine grids raises the question: is the GP absorbing genuine social excitation, or is it correctly capturing background variation that the longer-range GP misses? This could be explored via simulation studies with known ground truth.
+
+# Appendix: Run details
+
+- **Buoy:** NS01
+- **Analysis window:** Oct 1, 2021 -- Apr 30, 2022 (~211 days)
+- **Events:** 22,787 whale calls
+- **Platform:** Duke Compute Cluster (DCC), SLURM partition `common`, 128 GB RAM
+- **Node type:** `dcc-dhvimdcore-gpu-ferc` (GPU-class nodes; code is CPU-only)
+- **SLURM wall limit:** 5 days; all jobs cancelled at limit
+- **Iterations achieved:** 58,000--80,000 per combo (of 101,000 requested)
+- **Burn-in:** First $\frac{1}{3}$ of samples discarded
+- **Harmonics:** daily (1,440 min), weekly (10,080 min), biweekly (20,160 min), monthly (43,200 min), bimonthly (86,400 min)

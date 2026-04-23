@@ -35,11 +35,20 @@ timing_list <- list()
 for (i in 1:nrow(benchmark_grid)) {
   row   <- benchmark_grid[i, ]
   label <- paste0("rho", row$rho, "_sback", sprintf("%03d", row$sback))
-  fpath <- file.path(path_base, fold.fit, 'benchmark', label, 'phase1_timing.RData')
+  # Try buoy-scoped path first, fall back to legacy (pre-refactor) path
+  fpath <- file.path(path_base, fold.fit, buoy, 'benchmark', label, 'phase1_timing.RData')
+  if (!file.exists(fpath)) {
+    fpath <- file.path(path_base, fold.fit, 'benchmark', label, 'phase1_timing.RData')
+  }
 
   if (file.exists(fpath)) {
     load(fpath)
-    timing_list[[i]] <- as.data.frame(phase1_results)
+    # Flatten: drop NULL elements and strip names from named numerics
+    r <- lapply(phase1_results, function(x) {
+      if (is.null(x)) return(NA)
+      as.numeric(x)
+    })
+    timing_list[[i]] <- as.data.frame(r, stringsAsFactors = FALSE)
     cat(sprintf("  Loaded combo %d: %s\n", i, label))
   } else {
     cat(sprintf("  MISSING combo %d: %s\n", i, label))
@@ -134,11 +143,20 @@ param_names <- c("Intercept", "Noise", "SST",
                  "Bimonthly sin", "Bimonthly cos",
                  "delta", "alpha", "eta")
 
+# Key parameters for convergence diagnostics
+key_param_names <- c("alpha", "delta", "eta")
+
+# Storage for raw chains (for diagnostics) and posterior summaries
+raw_chains    <- list()
 posterior_list <- list()
+
 for (i in 1:nrow(benchmark_grid)) {
   row   <- benchmark_grid[i, ]
   label <- paste0("rho", row$rho, "_sback", sprintf("%03d", row$sback))
-  fpath <- file.path(path_base, fold.fit, 'benchmark', label, 'phase2_fit.RData')
+  fpath <- file.path(path_base, fold.fit, buoy, 'benchmark', label, 'phase2_fit.RData')
+  if (!file.exists(fpath)) {
+    fpath <- file.path(path_base, fold.fit, 'benchmark', label, 'phase2_fit.RData')
+  }
 
   if (!file.exists(fpath)) {
     cat(sprintf("  MISSING combo %d: %s (Phase 2)\n", i, label))
@@ -146,15 +164,26 @@ for (i in 1:nrow(benchmark_grid)) {
   }
 
   load(fpath)
-  cat(sprintf("  Loaded combo %d: %s (%d samples)\n",
-              i, label, nrow(postSamples)))
-
-  # Determine burn-in: use first 1/3 of samples
   n_samples <- nrow(postSamples)
+  p_i <- ncol(postSamples) - 3   # last 3 columns: delta, alpha, eta
+  cat(sprintf("  Loaded combo %d: %s (%d samples)\n", i, label, n_samples))
+
+  # Store key parameter chains for diagnostics
+  raw_chains[[i]] <- data.frame(
+    iteration = 1:n_samples,
+    combo_id  = i,
+    rho       = row$rho,
+    sback     = row$sback,
+    label     = label,
+    delta     = postSamples[, p_i + 1],
+    alpha     = postSamples[, p_i + 2],
+    eta       = postSamples[, p_i + 3],
+    stringsAsFactors = FALSE
+  )
+
+  # Burn-in: use first 1/3 of samples
   burn_i    <- floor(n_samples / 3)
   post_burn <- postSamples[(burn_i + 1):n_samples, ]
-
-  p_i <- ncol(post_burn) - 3  # last 3 columns: delta, alpha, eta
 
   # Build summary for each parameter
   for (j in 1:ncol(post_burn)) {
@@ -201,6 +230,129 @@ post_df$sback_label <- factor(paste0(post_df$sback, " min"),
 write.csv(post_df,
           file.path(bench_path_fig, "posterior_summary.csv"),
           row.names = FALSE)
+
+
+# =============================================================================-
+# 3b. Convergence diagnostics ----
+# =============================================================================-
+
+cat("\n=== Convergence Diagnostics ===\n")
+
+chain_df <- bind_rows(raw_chains)
+chain_long <- chain_df %>%
+  pivot_longer(cols = all_of(key_param_names),
+               names_to = "parameter", values_to = "value")
+chain_long$combo_label <- paste0("Combo ", chain_long$combo_id,
+                                  " (rho=", chain_long$rho,
+                                  ", sback=", chain_long$sback, ")")
+
+# --- Trace plots for alpha, delta, eta per combo ---
+p_trace <- ggplot(chain_long, aes(x = iteration, y = value)) +
+  geom_line(linewidth = 0.15, alpha = 0.5) +
+  facet_grid(parameter ~ combo_label, scales = "free_y",
+             labeller = label_wrap_gen(width = 18)) +
+  labs(title = "Trace plots — key parameters",
+       x = "Iteration", y = "Value") +
+  theme_bw() +
+  theme(strip.text = element_text(size = 6),
+        axis.text = element_text(size = 6))
+
+ggsave(file.path(bench_path_fig, "trace_plots.pdf"),
+       plot = p_trace, width = 20, height = 8)
+cat("Saved trace_plots.pdf\n")
+
+# --- ESS and Geweke diagnostics ---
+diag_list <- list()
+for (i in seq_along(raw_chains)) {
+  rc <- raw_chains[[i]]
+  if (is.null(rc)) next
+
+  n_samples <- nrow(rc)
+  burn_i    <- floor(n_samples / 3)
+
+  for (pname in key_param_names) {
+    full_chain  <- rc[[pname]]
+    post_chain  <- full_chain[(burn_i + 1):n_samples]
+    mcmc_obj    <- as.mcmc(post_chain)
+
+    # Effective sample size
+    ess <- effectiveSize(mcmc_obj)
+
+    # Geweke diagnostic: compare first 10% vs last 50% of post-burn chain
+    gew <- geweke.diag(mcmc_obj, frac1 = 0.1, frac2 = 0.5)
+    gew_z <- gew$z
+    gew_p <- 2 * pnorm(-abs(gew_z))
+
+    # Batch means SE (from batchmeans package)
+    bm <- bm(post_chain)
+
+    diag_list[[length(diag_list) + 1]] <- data.frame(
+      combo_id     = rc$combo_id[1],
+      rho          = rc$rho[1],
+      sback        = rc$sback[1],
+      parameter    = pname,
+      total_iters  = n_samples,
+      post_burn_n  = length(post_chain),
+      ess          = round(as.numeric(ess)),
+      ess_per_1k   = round(as.numeric(ess) / length(post_chain) * 1000, 1),
+      geweke_z     = round(gew_z, 3),
+      geweke_p     = round(gew_p, 4),
+      post_mean    = round(bm$est, 5),
+      post_se      = round(bm$se, 5),
+      stringsAsFactors = FALSE
+    )
+  }
+}
+
+diag_df <- bind_rows(diag_list)
+
+cat("\n  Convergence summary (post burn-in = first 1/3 discarded):\n")
+cat("  ---------------------------------------------------------\n")
+print(diag_df %>%
+        select(combo_id, rho, sback, parameter,
+               total_iters, post_burn_n, ess, geweke_z, geweke_p) %>%
+        as.data.frame(),
+      row.names = FALSE)
+
+# Flag potential issues
+problems <- diag_df %>%
+  filter(ess < 400 | geweke_p < 0.05)
+if (nrow(problems) > 0) {
+  cat("\n  WARNING: Potential convergence issues:\n")
+  print(problems %>%
+          select(combo_id, sback, parameter, ess, geweke_z, geweke_p) %>%
+          as.data.frame(),
+        row.names = FALSE)
+} else {
+  cat("\n  All combos pass ESS > 400 and Geweke p > 0.05.\n")
+}
+
+write.csv(diag_df,
+          file.path(bench_path_fig, "convergence_diagnostics.csv"),
+          row.names = FALSE)
+cat("Saved convergence_diagnostics.csv\n")
+
+# --- ESS comparison plot ---
+diag_df$sback_label <- factor(paste0(diag_df$sback, " min"),
+                               levels = paste0(sort(unique(diag_df$sback)), " min"))
+diag_df$rho_label   <- paste0("rho = ", diag_df$rho)
+
+p_ess <- ggplot(diag_df, aes(x = sback_label, y = ess,
+                              fill = rho_label)) +
+  geom_col(position = "dodge") +
+  geom_hline(yintercept = 400, linetype = "dashed", colour = "red") +
+  annotate("text", x = 0.5, y = 450, label = "ESS = 400",
+           hjust = 0, colour = "red", size = 3) +
+  facet_wrap(~ parameter, scales = "free_y", ncol = 1) +
+  labs(title = "Effective sample size by configuration",
+       x = "sback", y = "ESS (post burn-in)",
+       fill = "GP range") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+ggsave(file.path(bench_path_fig, "ess_comparison.pdf"),
+       plot = p_ess, width = 8, height = 8)
+cat("Saved ess_comparison.pdf\n")
 
 
 # =============================================================================-

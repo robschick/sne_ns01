@@ -4,7 +4,7 @@ library(tidyverse); library(readr)
 
 source('src/RFtns.R')
 sourceCpp('src/RcppFtns.cpp')
-source('src/config.R')   # std, analysis_end, datai
+source('src/config.R')   # std, analysis_end, datai, buoy_cfg
 
 # Note that the times of the call data and noise data are labeled UTC but they are actually EST
 
@@ -12,10 +12,10 @@ source('src/config.R')   # std, analysis_end, datai
 # Call times ----
 # =============================================================================-
 
-ns_01_all <- readRDS("data/ns_01_all.rds")
-data = ns_01_all %>%
-  dplyr::mutate(Channel = 1) %>% 
-  dplyr::select(ts, Channel) %>% 
+call_all <- readRDS(file.path("data", buoy_cfg$call_file))
+data = call_all %>%
+  dplyr::mutate(Channel = 1) %>%
+  dplyr::select(ts, Channel) %>%
   dplyr::arrange(ts)
 
 # plot(data$ts)
@@ -28,7 +28,7 @@ data = ns_01_all %>%
 # =============================================================================-
 # Noise variable ----
 # =============================================================================-
-noise = readRDS('data/ns01_rms_data.rds') #%>% 
+noise = readRDS(file.path("data", buoy_cfg$noise_file)) #%>%
   # mutate(noise_scl = scale(RMS))
 
 
@@ -91,9 +91,9 @@ noise = noise_filled %>%
 # > range(cox_01_all$end_datetime)[2]
 # [1] "2022-02-16 18:48:25 UTC"
 
-# Deployment origin: fixed reference from which ns_01_all$ts is measured (minutes).
+# Deployment origin: fixed reference from which call $ts is measured (minutes).
 # Do not change this — it is a property of the raw data, not the analysis window.
-std_deploy     <- as.POSIXct('2021-03-18 06:27:00', tz = 'UTC')
+std_deploy     <- as.POSIXct(buoy_cfg$deploy_time, tz = 'UTC')
 std_orig_num   <- as.numeric(std_deploy)   # seconds, for noise ts computation
 
 # Analysis window in minutes from deployment origin (std and analysis_end from config.R)
@@ -107,9 +107,9 @@ end_date <- as.Date(analysis_end)
 # SST variable ----
 # =============================================================================-
 sst = read_csv('data/sst/2025-11-20_SNE_buoys_sst-data.csv') %>%
-  dplyr::select(date,	sst_val = NS01) %>% 
-  dplyr::filter(date >= std_date & date <= end_date) %>% 
-  mutate(sst = as.vector(scale(sst_val))) %>% 
+  dplyr::select(date, sst_val = !!buoy_cfg$sst_col) %>%
+  dplyr::filter(date >= std_date & date <= end_date) %>%
+  mutate(sst = as.vector(scale(sst_val))) %>%
   as.data.frame()
 
 

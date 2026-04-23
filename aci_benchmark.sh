@@ -15,8 +15,9 @@
 # Submits 8 jobs (one per rho/sback combo).
 #
 # Usage:
-#   Phase 1 only (timing):   sbatch aci_benchmark.sh
-#   Phase 2 (full chain):    sbatch aci_benchmark.sh --full
+#   Phase 1 only (timing):   sbatch aci_benchmark.sh --buoy=ns01
+#   Phase 2 (full chain):    sbatch aci_benchmark.sh --buoy=ns01 --full
+#   All args after sbatch are passed through to the R script.
 #
 # Combo mapping (from benchmark_config.R):
 #   1: rho=60, sback=30    5: rho=30, sback=15

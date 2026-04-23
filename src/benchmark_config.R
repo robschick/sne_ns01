@@ -159,8 +159,8 @@ bench_phase1_iters <- 1000   # iterations for timing characterization
 
 # ── Output paths ─────────────────────────────────────────────────────────────
 
-bench_path_fit <- file.path(path_base, fold.fit, 'benchmark', bench_label, '')
-bench_path_fig <- file.path(local_base, 'fig', 'benchmark', '')
+bench_path_fit <- file.path(path_base, fold.fit, buoy, 'benchmark', bench_label, '')
+bench_path_fig <- file.path(local_base, 'fig', buoy, 'benchmark', '')
 
 ifelse(!dir.exists(bench_path_fit), dir.create(bench_path_fit, recursive = TRUE), FALSE)
 ifelse(!dir.exists(bench_path_fig), dir.create(bench_path_fig, recursive = TRUE), FALSE)
