@@ -66,7 +66,10 @@ buoy_cfg <- buoy_settings[[buoy]]
 # Note: timestamps are labeled UTC but are actually EST.
 std_str       <- '2021-10-01 00:00:00'
 std           <- as.POSIXct(std_str, tz = 'UTC')
-analysis_end  <- as.POSIXct('2022-04-30 04:01:00', tz = 'UTC')
+# 5-month analysis window (Oct 1 → Mar 1). Raw call data extends to
+# late-April 2022 for NS01/NS02 and mid-May 2022 for COX01; this cut
+# is a modeling choice, not a data-availability limit.
+analysis_end  <- as.POSIXct('2022-03-01 00:00:00', tz = 'UTC')
 
 # Harmonic anchor: minutes elapsed since midnight on the start date.
 # Derived from std so it stays in sync — 0 min for a midnight origin.

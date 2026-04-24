@@ -73,23 +73,15 @@ noise = noise_filled %>%
 # End Noise Variable ---------------
 
 
-# NS01
-# range(ns_01_all$start_datetime)[1]
-# [1] "2021-03-18 06:27:59 UTC"
-# > range(ns_01_all$end_datetime)[2]
-# [1] "2022-02-03 04:10:38 UTC"
-
-# NS02
-# > range(ns_02_all$start_datetime)[1]
-# [1] "2021-03-10 17:29:06 UTC"
-# > range(ns_02_all$end_datetime)[2]
-# [1] "2022-02-06 14:17:40 UTC"
-
-# COX01
-# > range(cox_01_all$start_datetime)[1]
-# [1] "2021-02-26 21:03:38 UTC"
-# > range(cox_01_all$end_datetime)[2]
-# [1] "2022-02-16 18:48:25 UTC"
+# Raw call data ranges (for reference; verify with
+# `min(<buoy>_all$start_datetime); max(<buoy>_all$end_datetime)`):
+#
+# NS01:  2021-03-18 06:27:59 UTC  –  2022-04-30 04:00:52 UTC
+# NS02:  2021-03-10 17:29:06 UTC  –  2022-04-28 02:41:01 UTC
+# COX01: 2021-02-26 21:03:38 UTC  –  2022-05-14 20:13:20 UTC
+#
+# The analysis window (std → analysis_end in config.R) is a modeling
+# choice — it may be narrower than the data range.
 
 # Deployment origin: fixed reference from which call $ts is measured (minutes).
 # Do not change this — it is a property of the raw data, not the analysis window.
