@@ -137,24 +137,32 @@ noise <- noise %>%
 # offset_min and end_min are in minutes from the deployment origin (std_deploy).
 # =============================================================================-
 
+n_raw <- nrow(data)
+
 data = data %>%
   filter(ts >= offset_min, ts <= end_min) %>%
   mutate(ts = ts - offset_min)
-
-plot(data$ts)
-length(data$ts)
-length(unique(data$ts))
-
 
 noise = noise %>%
   filter(ts >= offset_min, ts <= end_min) %>%
   mutate(ts = ts - offset_min)
 
-dim(noise)
 noise = unique(noise)
 
 
 save(data, noise, file = paste0('data/', datai, '.RData'))
+
+
+# ── Summary ──────────────────────────────────────────────────────────────────
+cat(sprintf('\n=== %s ===\n', toupper(buoy)))
+cat(sprintf('  Window:            %s  ->  %s\n',
+            format(std, '%Y-%m-%d'), format(analysis_end, '%Y-%m-%d')))
+cat(sprintf('  Raw events:        %d\n', n_raw))
+cat(sprintf('  Events in window:  %d  (%.1f%% of raw)\n',
+            nrow(data), 100 * nrow(data) / n_raw))
+cat(sprintf('  Unique timestamps: %d  (%d duplicates)\n',
+            length(unique(data$ts)), nrow(data) - length(unique(data$ts))))
+cat(sprintf('  Noise grid rows:   %d\n\n', nrow(noise)))
 
 
 
