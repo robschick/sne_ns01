@@ -99,7 +99,7 @@ harm_periods_lgcp <- c(
 
 
 # ── MCMC settings ─────────────────────────────────────────────────────────────
-niters_lgcp         <- 150000
+niters_lgcp         <- 100000
 adaptInterval       <- 200
 adaptFactorExponent <- 0.8
 sigma2_init         <- rep(0.2^2, 3)   # initial proposal variances
