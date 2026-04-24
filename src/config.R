@@ -82,9 +82,11 @@ fiti_lgcp <- 'LGCPSE'
 
 
 # ── Time discretization ───────────────────────────────────────────────────────
-sback_lgcp <- 12 * 60   # 720 min — segment width for LGCPSE numerical integration
-
-rho_lgcp <- 3 * 12 * 60 / 3   # 60 min  (effective range = rho * 3 = 180 min)
+# Values from the benchmark report (benchmark_report.Rmd §Recommendation):
+# α posterior has plateaued at sback = 60; ρ = 60 gives effective GP range of
+# 180 min (3 hrs), ecologically interpretable for background call rate.
+sback_lgcp <- 60   # min — segment width for LGCPSE numerical integration
+rho_lgcp   <- 60   # min — GP range; effective range = rho * 3 = 180 min
 
 
 # ── Harmonic periods for design matrix (in minutes) ──────────────────────────
