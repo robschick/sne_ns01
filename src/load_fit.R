@@ -25,13 +25,16 @@
 #   betaInd, deltaInd, alphaInd, etaInd
 # =============================================================================
 
-if (!exists('burn') || is.null(burn)) burn <- buoy_cfg$burn
+# All `exists()` checks use inherits=FALSE so they see only the sourcing
+# environment — otherwise `coda::thin`, for example, would satisfy
+# exists('thin') and trip the subsampling branch below.
+if (!exists('burn', inherits = FALSE) || is.null(burn)) burn <- buoy_cfg$burn
 
 load(file.path(path.data, paste0(datai, '.RData')))        # data, noise
 load(file.path(path.fit,  paste0(datai, fiti, '.RData')))  # postSamples, Xm, knts, ...
 
 # postBranching is large (niters x n_events) and unused in post-processing
-if (exists('postBranching')) rm(postBranching)
+if (exists('postBranching', inherits = FALSE)) rm(postBranching)
 
 p        <- ncol(Xm)
 betaInd  <- 1:p
@@ -42,7 +45,7 @@ etaInd   <- p + 3
 postSamples <- postSamples[-(1:burn), ]
 postWm      <- postWm[-(1:burn), ]
 
-if (exists('thin') && !is.null(thin)) {
+if (exists('thin', inherits = FALSE) && !is.null(thin)) {
   idx         <- floor(seq(1, nrow(postSamples), length.out = thin))
   postSamples <- postSamples[idx, ]
   postWm      <- postWm[idx, ]
