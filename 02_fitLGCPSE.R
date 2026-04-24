@@ -166,10 +166,14 @@ for(i in (start+1):length(outers) ){
 
 
 # Mirror the completed fit to the persistent lab share. /work/rss10/ is wiped
-# after 75 days; the schicklab share is not. No-op when the target is not
-# writable (e.g., laptop runs).
+# after 75 days; the schicklab share is not. Gated on whether the share is
+# mounted so laptop runs skip silently (file.copy has no showWarnings knob
+# and would otherwise warn when the destination parent doesn't exist).
 archive_path <- file.path(hpc_archive_base, fold.fit, buoy)
-dir.create(archive_path, recursive = TRUE, showWarnings = FALSE)
-ok <- file.copy(filename, archive_path, overwrite = TRUE)
+ok <- FALSE
+if (dir.exists(hpc_archive_base)) {
+  dir.create(archive_path, recursive = TRUE, showWarnings = FALSE)
+  ok <- file.copy(filename, archive_path, overwrite = TRUE)
+}
 cat(sprintf("Archive %s -> %s: %s\n", filename, archive_path,
             if (isTRUE(ok)) "OK" else "SKIPPED"))
