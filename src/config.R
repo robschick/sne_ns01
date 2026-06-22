@@ -61,7 +61,7 @@ buoy_cfg <- buoy_settings[[buoy]]
 
 
 # ── Analysis window ───────────────────────────────────────────────────────────
-# Standardized across all buoys: Oct 1 2021 – Apr 30 2022.
+# Standardized across all buoys: Oct 1 2021 – Mar 01 2022.
 # ts = 0 at std, ts in minutes.
 # Note: timestamps are labeled UTC but are actually EST.
 std_str       <- '2021-10-01 00:00:00'
@@ -88,18 +88,18 @@ fiti_lgcp <- 'LGCPSE'
 # Values from the benchmark report (benchmark_report.Rmd §Recommendation):
 # α posterior has plateaued at sback = 60; ρ = 60 gives effective GP range of
 # 180 min (3 hrs), ecologically interpretable for background call rate.
-sback_lgcp <- 60   # min — segment width for LGCPSE numerical integration
+sback_lgcp <- 20   # min — segment width for LGCPSE numerical integration
 rho_lgcp   <- 60   # min — GP range; effective range = rho * 3 = 180 min
 
 
 # ── Harmonic periods for design matrix (in minutes) ──────────────────────────
 # Each entry generates one sin + one cos column in Xm.
-# For a ~7-month window (Oct 2021 – Apr 2022), all periods below have ≥3 cycles.
+# For a ~5-month window (Oct 2021 – Feb 2022), all periods below have ≥3 cycles.
 harm_periods_lgcp <- c(
-  1 * harm_week_unit,    # 1-week  (~30 cycles)
-  2 * harm_week_unit,    # 2-week  (~15 cycles)
-  1 * harm_month_unit,   # 1-month (~7 cycles)
-  2 * harm_month_unit    # 2-month (~3.5 cycles)
+  1 * harm_week_unit,    # 1-week  (~20 cycles)
+  2 * harm_week_unit,    # 2-week  (~10 cycles)
+  1 * harm_month_unit,   # 1-month (~5 cycles)
+  2 * harm_month_unit    # 2-month (~2.5 cycles)
 )
 
 
