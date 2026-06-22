@@ -15,7 +15,14 @@ source('src/config.R')
 source('src/RFtns.R')
 
 fiti <- fiti_lgcp
+
+# Optional posterior thinning to bound peak memory. This script forms three
+# dense niters x n_knots matrices (XB, XBharm, XBW), so the largest buoy (NS02)
+# can OOM on a memory-limited node. Set THIN=<n> to keep n evenly-spaced draws;
+# unset (default) uses the full post-burn chain. load_fit.R reads `thin`.
+thin <- if (Sys.getenv("THIN", unset = "") == "") NULL else as.integer(Sys.getenv("THIN"))
 source('src/load_fit.R')   # data, noise, postSamples, postWm, Xm, knts, betaInd, deltaInd
+rm(thin)                   # reset so a stray value can't leak into later sources
 
 ifelse(!dir.exists(path.fig), dir.create(path.fig, recursive = TRUE), FALSE)
 

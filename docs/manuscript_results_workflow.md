@@ -92,6 +92,13 @@ Cross-buoy combined tables (writes into `fig/combined/`):
 Rscript 05_sumCombined.R            # run WITHOUT --buoy; it loops all three
 ```
 
+> **Memory note (`05_sumXB.R`):** this script forms three dense
+> `niters × n_knots` matrices, so the largest buoy (NS02) can OOM on a
+> memory-limited node. Either give the job more memory (e.g.
+> `salloc --mem=64G`) or thin the chain via the `THIN` env var —
+> `THIN=2000 Rscript 05_sumXB.R --buoy=ns02` keeps 2,000 evenly-spaced
+> draws. Unset (default) uses the full post-burn chain.
+
 ---
 
 ## Mapping to the three manuscript asks
