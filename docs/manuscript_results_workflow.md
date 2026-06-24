@@ -8,8 +8,10 @@ background / counter) for **NS01, NS02, COX01**.
 > component (the Hawkes triggering term). Background calls are the
 > non-excited (LGCP) component. Total = background + self-excitement.
 
-The analysis window is shared across all buoys: **2021-10-01 → 2022-03-01**
-(5 months), set in `src/config.R` (`std`, `analysis_end`).
+The analysis window is shared across all buoys: **2021-10-01 → 2022-04-30**
+(~7 months / 211 days), set in `src/config.R` (`std`, `analysis_end`). This
+cut is at the NS01/NS02 raw-data limit. (Extended from the earlier 5-month
+Mar-01 cut — see `docs/window_extension_runbook.md` for the re-run procedure.)
 
 ---
 
@@ -110,7 +112,8 @@ HPD excludes 0):
 
 - **Covariates:** Noise, SST
 - **Harmonics:** sin + cos for each period in `harm_periods_lgcp`
-  (1 wk, 2 wk, 1 mo, 2 mo)
+  (**1 day**, 1 wk, 2 wk, 1 mo, 2 mo) — the daily/diel term was added to
+  capture the diel calling cycle flagged by the RTC Q-Q upper-tail diagnosis
 - **Self-excitement block:**
   - `alpha` — excitement (Hawkes branching magnitude)
   - `delta` — GP scale on the background log-intensity
