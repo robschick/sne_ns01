@@ -2,7 +2,7 @@
 #SBATCH --partition=common
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=64GB
-#SBATCH --time=1-00:00:00
+#SBATCH --time=14-00:00:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=rss10@duke.edu
 #SBATCH --job-name=lgcp_ll

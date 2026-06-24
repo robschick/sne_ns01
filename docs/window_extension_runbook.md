@@ -36,6 +36,20 @@ only takes effect after `01_data.R` is re-run.
 The cluster code repo is `sne_dev` at `/hpc/group/schicklab/sne_dev`; fit
 outputs go to the work dir `/work/rss10/sne_ns01/`.
 
+> **Cluster repo must be a git clone.** `sne_dev` is a clone of
+> `github.com/robschick/sne_ns01` (tracking `origin/master`). If it is ever a
+> hand-copied folder, `git pull` won't work — re-clone it:
+> `mv sne_dev sne_dev.bak && git clone <url> sne_dev`, then copy `data/` back in
+> (next point), and re-apply any cluster-only SLURM edits (e.g. `aci_ll.sh`
+> walltime).
+>
+> **`data/` is gitignored** — a fresh clone has none of it. `01_data.R` needs,
+> per buoy, in `sne_dev/data/`: the **call file** `<buoy>_all.rds`
+> (e.g. `ns_01_all.rds`), the **noise file** `<buoy>_rms_data.rds`, and
+> `sst/2025-11-20_SNE_buoys_sst-data.csv`. Push the raw `.rds` from the laptop;
+> do NOT push the generated `data/<buoy>.RData` (01_data.R regenerates it for
+> the new window).
+
 **1. Code** — get the config change onto the cluster (preferred: via the
 GitHub remote; see below):
 
