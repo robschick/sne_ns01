@@ -40,11 +40,13 @@ ub90 <- function(x) HPDinterval(as.mcmc(x), prob = 0.90)[2]
 # predictor labels in the harmonic-effects plots so they cannot drift out of
 # sync with harm_periods_lgcp.
 fmt_period <- function(minutes) {
+  day   <- 1  * 24 * 60   # 1,440
   week  <- 7  * 24 * 60   # 10,080
   month <- 30 * 24 * 60   # 43,200
   vapply(minutes, function(m) {
     if      (m %% month == 0) sprintf('%g mo',  m / month)
     else if (m %% week  == 0) sprintf('%g wk',  m / week)
+    else if (m %% day   == 0) sprintf('%g day', m / day)
     else                      sprintf('%g min', m)
   }, character(1))
 }

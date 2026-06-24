@@ -61,20 +61,21 @@ buoy_cfg <- buoy_settings[[buoy]]
 
 
 # ── Analysis window ───────────────────────────────────────────────────────────
-# Standardized across all buoys: Oct 1 2021 – Mar 01 2022.
+# Standardized across all buoys: Oct 1 2021 – Apr 30 2022.
 # ts = 0 at std, ts in minutes.
 # Note: timestamps are labeled UTC but are actually EST.
 std_str       <- '2021-10-01 00:00:00'
 std           <- as.POSIXct(std_str, tz = 'UTC')
-# 5-month analysis window (Oct 1 → Mar 1). Raw call data extends to
-# late-April 2022 for NS01/NS02 and mid-May 2022 for COX01; this cut
-# is a modeling choice, not a data-availability limit.
-analysis_end  <- as.POSIXct('2022-03-01 00:00:00', tz = 'UTC')
+# ~7-month analysis window (Oct 1 → Apr 30). Raw call data extends to
+# late-April 2022 for NS01/NS02 and mid-May 2022 for COX01, so this cut
+# is at the NS01/NS02 data limit (shared window across all three buoys).
+analysis_end  <- as.POSIXct('2022-04-30 00:00:00', tz = 'UTC')
 
 # Harmonic anchor: minutes elapsed since midnight on the start date.
 # Derived from std so it stays in sync — 0 min for a midnight origin.
 harm_start_time <- as.numeric(format(std, '%H')) * 60 +
                    as.numeric(format(std, '%M'))
+harm_day_unit   <- 1  * 24 * 60    # 1,440 min per day
 harm_week_unit  <- 7  * 24 * 60    # 10,080 min per week
 harm_month_unit <- 30 * 24 * 60    # 43,200 min per "month"
 
@@ -94,12 +95,16 @@ rho_lgcp   <- 60   # min — GP range; effective range = rho * 3 = 180 min
 
 # ── Harmonic periods for design matrix (in minutes) ──────────────────────────
 # Each entry generates one sin + one cos column in Xm.
-# For a ~5-month window (Oct 2021 – Feb 2022), all periods below have ≥3 cycles.
+# For a ~7-month window (Oct 2021 – Apr 2022), all periods below have ≥3 cycles.
+# Daily/diel term added to capture the diel calling cycle (see QQ upper-tail
+# diagnosis); its period (1,440 min) exceeds the GP effective range (3*rho=180),
+# so the GP does not absorb it.
 harm_periods_lgcp <- c(
-  1 * harm_week_unit,    # 1-week  (~20 cycles)
-  2 * harm_week_unit,    # 2-week  (~10 cycles)
-  1 * harm_month_unit,   # 1-month (~5 cycles)
-  2 * harm_month_unit    # 2-month (~2.5 cycles)
+  1 * harm_day_unit,     # daily   (~212 cycles)
+  1 * harm_week_unit,    # 1-week  (~30 cycles)
+  2 * harm_week_unit,    # 2-week  (~15 cycles)
+  1 * harm_month_unit,   # 1-month (~7 cycles)
+  2 * harm_month_unit    # 2-month (~3.5 cycles)
 )
 
 
