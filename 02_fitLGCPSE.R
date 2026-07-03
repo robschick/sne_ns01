@@ -3,6 +3,7 @@ library(Rcpp); library(RcppArmadillo)
 library(tidyverse); library(foreach)
 
 source('src/config.R')
+source('src/design.R')
 
 path.cpp = 'src/RcppFtns.cpp'
 
@@ -51,15 +52,14 @@ noise$UTC[1]
 #   cos(2 * pi * (knts + 6*60 + 27) / (4 * 30 * 24 * 60)) # 4m * 30d * 24h * 60m  # should be at least sback*4*2
 # )
 
-# Harmonic columns: one sin + one cos per period in harm_periods_lgcp (minutes).
-# To add/remove harmonics, edit harm_periods_lgcp in src/config.R only.
-harm_cols = do.call(cbind, lapply(harm_periods_lgcp, function(p) {
-  cbind(
-    sin(2 * pi * (knts + harm_start_time) / p),
-    cos(2 * pi * (knts + harm_start_time) / p)
-  )
-}))
-Xm = cbind(1, noiseVar, sstVar, harm_cols)
+# Design matrix built by the shared owner in src/design.R (intercept, noise,
+# sst, and one sin + one cos per period in harm_periods_lgcp). To add/remove
+# harmonics, edit harm_periods_lgcp in src/config.R only.
+Xm = build_design_matrix(
+  knts, noiseVar, sstVar,
+  cfg = list(harm_periods    = harm_periods_lgcp,
+             harm_start_time = harm_start_time)
+)
 
 
 p = ncol(Xm)
