@@ -82,7 +82,8 @@ harm_month_unit <- 30 * 24 * 60    # 43,200 min per "month"
 
 # ── Model identity ────────────────────────────────────────────────────────────
 datai     <- buoy
-fiti_lgcp <- 'LGCPSE'
+# fiti_lgcp is set in the "Seasonal spline" section below: it stays 'LGCPSE' by
+# default and switches to the isolated 'LGCPSEspl' namespace when the spline is on.
 
 
 # ── Time discretization ───────────────────────────────────────────────────────
@@ -106,6 +107,27 @@ harm_periods_lgcp <- c(
   1 * harm_month_unit,   # 1-month (~7 cycles)
   2 * harm_month_unit    # 2-month (~3.5 cycles)
 )
+
+
+# ── Seasonal spline ───────────────────────────────────────────────────────────
+# A natural-spline basis in time added to the background design to represent the
+# end-of-season calling decline that harmonics + a short GP structurally cannot.
+# Built by build_design_matrix() in src/design.R. When ON:
+#   * the 2-month harmonic is dropped (the spline owns all sub-seasonal structure,
+#     so keeping it would compete with / alias the spline), and
+#   * the fit tag switches to 'LGCPSEspl' so every output (fit/loglik/lam/rtct/
+#     num/fig + archive) lands in an isolated namespace and never collides with
+#     production 'LGCPSE' files.
+# Default OFF reproduces the exact 13-column LGCPSE design bit-for-bit.
+seasonal_spline             <- FALSE            # master on/off toggle
+seasonal_spline_df          <- 6                # natural-spline degrees of freedom
+seasonal_spline_method      <- 'ns'             # 'ns' | 'pspline' (Phase 4 fallback)
+seasonal_spline_boundary    <- NULL             # NULL -> range(knts); else c(lo, hi)
+seasonal_spline_drop_period <- 2 * harm_month_unit  # harmonic dropped when spline ON
+
+
+# ── Fit tag (isolated namespace when the spline is on) ────────────────────────
+fiti_lgcp <- if (isTRUE(seasonal_spline)) 'LGCPSEspl' else 'LGCPSE'
 
 
 # ── MCMC settings ─────────────────────────────────────────────────────────────
