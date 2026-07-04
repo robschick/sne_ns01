@@ -53,13 +53,9 @@ noise$UTC[1]
 # )
 
 # Design matrix built by the shared owner in src/design.R (intercept, noise,
-# sst, and one sin + one cos per period in harm_periods_lgcp). To add/remove
-# harmonics, edit harm_periods_lgcp in src/config.R only.
-Xm = build_design_matrix(
-  knts, noiseVar, sstVar,
-  cfg = list(harm_periods    = harm_periods_lgcp,
-             harm_start_time = harm_start_time)
-)
+# sst, harmonics, and — when seasonal_spline is ON — the seasonal spline with the
+# 2-month harmonic dropped). All knobs come from src/config.R via design_cfg().
+Xm = build_design_matrix(knts, noiseVar, sstVar, design_cfg())
 
 
 p = ncol(Xm)
