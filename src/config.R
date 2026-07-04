@@ -119,7 +119,11 @@ harm_periods_lgcp <- c(
 #     num/fig + archive) lands in an isolated namespace and never collides with
 #     production 'LGCPSE' files.
 # Default OFF reproduces the exact 13-column LGCPSE design bit-for-bit.
-seasonal_spline             <- FALSE            # master on/off toggle
+seasonal_spline             <- TRUE             # master on/off toggle
+# NOTE: default is ON on the `seasonal-spline-phase3` experiment branch so every
+# cluster run (02_fitLGCPSE.R etc.) uses the spline and writes to the isolated
+# 'LGCPSEspl' tag. master keeps this FALSE (production, bit-for-bit LGCPSE) — do
+# not carry this TRUE onto master when merging.
 seasonal_spline_df          <- 6                # natural-spline degrees of freedom
 seasonal_spline_method      <- 'ns'             # 'ns' | 'pspline' (Phase 4 fallback)
 seasonal_spline_boundary    <- NULL             # NULL -> range(knts); else c(lo, hi)

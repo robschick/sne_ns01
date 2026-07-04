@@ -11,6 +11,7 @@ rm(list = ls())
 library(coda); library(tidyverse); library(batchmeans); library(xtable)
 
 source('src/config.R')
+source('src/design.R')
 source('src/RFtns.R')
 
 fiti <- fiti_lgcp
@@ -19,12 +20,17 @@ source('src/load_fit.R')   # postSamples, Xm, betaInd, deltaInd, alphaInd, etaIn
 ifelse(!dir.exists(path.fig), dir.create(path.fig, recursive = TRUE), FALSE)
 
 # ── Predictor labels ────────────────────────────────────────────────────────
-# Xm structure (see 02_fitLGCPSE.R): intercept, noise, SST, then (sin, cos) per
-# period in harm_periods_lgcp. betaInd[-1] drops the intercept.
-harm_labels <- unlist(lapply(fmt_period(harm_periods_lgcp), function(lbl) {
+# Xm structure (see src/design.R): intercept, noise, SST, then (sin, cos) per
+# retained harmonic period, then — when the seasonal spline is ON — the spline
+# basis columns (with the 2-month harmonic dropped). design_columns() owns the
+# conditional drop / spline count so the labels can't drift from the design.
+# betaInd[-1] drops the intercept.
+cols          <- design_columns(design_cfg())
+harm_labels   <- unlist(lapply(fmt_period(cols$periods), function(lbl) {
   c(paste(lbl, 'sine'), paste(lbl, 'cosine'))
 }))
-Predictors <- c('Noise', 'SST', harm_labels)
+spline_labels <- if (cols$n_spline) paste('Spline', seq_len(cols$n_spline)) else character(0)
+Predictors    <- c('Noise', 'SST', harm_labels, spline_labels)
 
 postbetas <- postSamples[, betaInd[-1]]
 stopifnot(ncol(postbetas) == length(Predictors))

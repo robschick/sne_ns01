@@ -48,6 +48,38 @@ build_seasonal_spline <- function(knts, cfg) {
   unclass(splines::ns(knts, df = cfg$spline_df, Boundary.knots = bknots))
 }
 
+# Column-index groups of an Xm built by build_design_matrix(), in build order.
+# Single source of truth for post-processing scripts that need to slice Xm by
+# component — the harmonic-only background series, or per-coefficient labels —
+# without re-deriving the conditional 2-month drop or the spline column count.
+#
+#   $intercept  1
+#   $noise      2
+#   $sst        3
+#   $harm       harmonic sin/cos columns (2 per retained period; drops the
+#               2-month harmonic when the spline is ON, mirroring build_*)
+#   $spline     seasonal-spline columns (integer(0) when the spline is OFF)
+#   $periods    the harmonic periods actually in the design (post-drop), in
+#               build order — feed to fmt_period() for labels
+#
+# `cfg` is the design_cfg() list. Column indices are derived from cfg alone, so
+# this stays in lockstep with build_design_matrix() by construction.
+design_columns <- function(cfg) {
+  periods <- cfg$harm_periods
+  if (isTRUE(cfg$seasonal_spline) && !is.null(cfg$drop_period)) {
+    periods <- periods[periods != cfg$drop_period]
+  }
+  n_harm   <- 2L * length(periods)
+  harm     <- if (n_harm)   3L + seq_len(n_harm)             else integer(0)
+  n_spline <- if (isTRUE(cfg$seasonal_spline)) as.integer(cfg$spline_df) else 0L
+  spline   <- if (n_spline) 3L + n_harm + seq_len(n_spline)  else integer(0)
+  list(
+    intercept = 1L, noise = 2L, sst = 3L,
+    harm = harm, spline = spline,
+    periods = periods, n_spline = n_spline
+  )
+}
+
 # Assemble Xm from covariate vectors aligned to `knts`.
 #
 #   knts     numeric segment knots (minutes since std)
