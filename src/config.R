@@ -147,7 +147,7 @@ fiti_lgcp <- if (isTRUE(seasonal_spline)) 'LGCPSEspl' else 'LGCPSE'
 
 
 # ── MCMC settings ─────────────────────────────────────────────────────────────
-niters_lgcp         <- 100000
+niters_lgcp         <- 250000 # 100000 — bumped for COX01 spline convergence (resume-and-extend)
 adaptInterval       <- 200
 adaptFactorExponent <- 0.8
 sigma2_init         <- rep(0.2^2, 3)   # initial proposal variances
