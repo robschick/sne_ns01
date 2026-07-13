@@ -119,11 +119,23 @@ harm_periods_lgcp <- c(
 #     num/fig + archive) lands in an isolated namespace and never collides with
 #     production 'LGCPSE' files.
 # Default OFF reproduces the exact 13-column LGCPSE design bit-for-bit.
-seasonal_spline             <- TRUE             # master on/off toggle
-# NOTE: default is ON on the `seasonal-spline-phase3` experiment branch so every
-# cluster run (02_fitLGCPSE.R etc.) uses the spline and writes to the isolated
-# 'LGCPSEspl' tag. master keeps this FALSE (production, bit-for-bit LGCPSE) — do
-# not carry this TRUE onto master when merging.
+# Per-buoy enablement. The spline is currently scoped to COX01 only; NS01/NS02
+# stay production (bit-for-bit LGCPSE) until the COX01 7-month spline results are
+# reviewed. This is the ONLY place the spline is turned on/off — design.R and
+# fiti_lgcp both read the resolved scalar `seasonal_spline` below, so nothing
+# downstream changes. Buoys not listed default to FALSE (fail-safe: they read the
+# production LGCPSE fit that actually exists, never a phantom LGCPSEspl file).
+#
+# NOTE: cox01 = TRUE is the experiment default on the `seasonal-spline-phase3`
+# branch. master keeps all buoys FALSE — do not carry cox01 = TRUE onto master
+# when merging.
+seasonal_spline_by_buoy <- c(
+  ns01  = FALSE,
+  ns02  = FALSE,
+  cox01 = TRUE
+)
+seasonal_spline <- isTRUE(unname(seasonal_spline_by_buoy[buoy]))
+cat(sprintf("Seasonal spline for %s: %s\n", buoy, seasonal_spline))
 seasonal_spline_df          <- 6                # natural-spline degrees of freedom
 seasonal_spline_method      <- 'ns'             # 'ns' | 'pspline' (Phase 4 fallback)
 seasonal_spline_boundary    <- NULL             # NULL -> range(knts); else c(lo, hi)
