@@ -53,7 +53,7 @@ buoy_settings <- list(
     noise_file  = "cox01_rms_data.rds",
     sst_col     = "COX01",
     deploy_time = "2021-02-26 21:03:00",
-    burn        = 50000
+    burn        = 130000   # LGCPSEspl 250k-chain: -2logL plateaus ~abs iter 125k-130k
   )
 )
 
