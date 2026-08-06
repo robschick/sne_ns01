@@ -2,7 +2,7 @@
 #SBATCH --partition=common
 #SBATCH --cpus-per-task=20
 #SBATCH --mem=128GB
-#SBATCH --time=21-00:00:00
+#SBATCH --time=28-00:00:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=rss10@duke.edu
 #SBATCH --job-name=lgcp_fit
@@ -25,6 +25,25 @@ module load Boost/1.75-rhel8
 module load R/4.1.1-rhel8
 
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK}"
-cd $SLURM_SUBMIT_DIR
+cd "$SLURM_SUBMIT_DIR"
+
+# --- Provenance + branch guard ----------------------------------------------
+# Fits run for weeks, so record exactly what code produced them. The optional
+# EXPECTED_BRANCH check aborts before burning walltime on the wrong branch:
+#   sbatch --export=ALL,BUOY=cox01,EXPECTED_BRANCH=seasonal-spline-phase3 aci_fit.sh
+#
+# Use straight quotes only in the executable lines below. A pasted curly quote
+# once broke this file with "unexpected EOF while looking for matching quote" --
+# bash ignores comments, so em-dashes in prose are fine; smart quotes in code
+# are not. Preflight before submitting:
+#   bash -n aci_fit.sh && grep -nP "[\x{2018}\x{2019}\x{201C}\x{201D}]" aci_fit.sh
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+COMMIT=$(git rev-parse --short HEAD)
+echo "=== provenance: buoy=${BUOY:-UNSET} branch=${BRANCH} commit=${COMMIT} dir=${PWD} ==="
+git status --short
+if [[ -n "${EXPECTED_BRANCH:-}" && "${BRANCH}" != "${EXPECTED_BRANCH}" ]]; then
+  echo "ERROR: expected ${EXPECTED_BRANCH} but on ${BRANCH} -- aborting" >&2
+  exit 1
+fi
 
 srun Rscript 02_fitLGCPSE.R

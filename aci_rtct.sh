@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=common
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=128GB
+#SBATCH --mem=160GB
 #SBATCH --time=14-00:00:00
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=rss10@duke.edu
