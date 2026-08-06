@@ -1,0 +1,234 @@
+---
+title: "NARW Calling Decline and the Fit Window"
+subtitle: "RTC diagnosis of the extended window, and a phased plan to *estimate* the seasonal decline (cox01)"
+author: "Rob Schick"
+date: 2026-07-02
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+    fig-cap-location: bottom
+    embed-resources: true
+---
+
+## TL;DR {#sec-tldr}
+
+- Extending the analysis window from **Mar 1** to **Apr 30 2022** made the cox01 RTC
+  Q-Q diagnostic look ~6× worse (MSD **15.1 → 92.2**). That headline number is
+  **misleading**: it is dominated by a handful of extreme points.
+- Decomposing it shows the extra misfit is **pervasive over-dispersion**, and the
+  gap classifier shows it is **real biological silence** — long stretches
+  (27–56 h) in **March–April** where the recorder was on but whales had gone
+  quiet. This is the seasonal end-of-calling / departure signal.
+- The current model's intensity has a **positive floor** (background + harmonics +
+  short-range GP cannot fall to ~0 for days), so the compensator keeps accruing
+  through each silence → the over-dispersion. **Making the window longer cannot
+  fix this** — the fix has to be a model component operating at the *seasonal*
+  timescale.
+- We want to **estimate** that decline (a signal about animals leaving), not
+  hard-code a date. Plan: **curve now, state later** — Phase 1 a smooth,
+  estimated seasonal spline; Phase 2 an interpretable departure/regime process.
+- A prototype confirms **Phase 1 is R-only** (the spline goes through the Rcpp
+  sampler with zero C++ changes) and that the design **can** represent the
+  decline. Three design risks were surfaced (see @sec-caveats).
+
+---
+
+## What changed, and the symptom {#sec-symptom}
+
+The 2026-06-24 config change extended the window to Apr 30 2022 and added a daily
+(diel) harmonic. Re-fitting cox01 and comparing the RTC Q-Q mean-squared
+difference (MSD) old vs new:
+
+| window | n (events) | MSD (full) | MSD (central 95 %) | max Sample |
+|:--|--:|--:|--:|--:|
+| OLD (Oct 1 – Mar 1) | 6,098 | 15.10 | 0.024 | 263.3 |
+| NEW (Oct 1 – Apr 30) | 8,806 | 92.17 | 0.214 | 510.8 |
+
+The full-range MSD is an **outlier meter**, not a fit meter. Reading the worst-5
+squared residuals against the total:
+
+- **OLD** total squared error ≈ 15.10 × 6098 ≈ 92,000; the top **4** points
+  (64478, 20357, 4881, 2147) sum to ~91,900 — **≈ 99.8 % of the MSD is 4 events.**
+- **NEW** total ≈ 92.17 × 8806 ≈ 812,000; the top 5 (250974, 165986, 142939,
+  43646, 41652) are ~645,000 (~80 %), with more behind them.
+
+So the metric mostly measures *how large the biggest inter-event gaps are* — and
+the longer window simply has more, larger gaps.
+
+## Diagnosis: dispersion + gap classification {#sec-diagnosis}
+
+### It is pervasive over-dispersion, not a few outliers {#sec-dispersion}
+
+`08_qqDispersion.R` puts numbers on the compensator increments
+$d_i = \int_{t_{i-1}}^{t_i}\lambda$, which are i.i.d. $\mathrm{Exp}(1)$ (mean =
+var = 1) under a correct model:
+
+| metric | OLD | NEW | reading |
+|:--|--:|--:|:--|
+| mean_d | 0.963 | 0.976 | ≈ 1 both — budget conserved |
+| var_d | 17.3 | 98.2 | full variance (outlier-driven) |
+| **var_drop (top-5 removed)** | **0.877** | **21.861** | **the tell** |
+| bulk_slope | 0.871 | 0.771 | more under-dispersed bulk |
+| acf1_U | 0.189 | 0.507 | stronger serial structure |
+| ks_D vs Exp(1) | 0.075 | 0.356 | ~5× worse |
+
+The decisive line is **var_drop**. In the OLD fit, dropping the 5 biggest
+increments collapses the variance from 17.3 to **0.88** — remove a handful of
+silences and the increments are essentially clean $\mathrm{Exp}(1)$. In the NEW
+fit, dropping the top 5 only brings it from 98 to **21.9** — still **22× the
+target**. The extra misfit is spread across *many* large increments, not five.
+
+### The gaps are real silence, clustered in the new window {#sec-gaps}
+
+`07_gapVsCoverage.R` cross-references each top gap against the raw noise (RMS)
+logger. `noise_missing = 0` means the recorder was on the whole time, so the
+gap is **true biological silence**, not a recording outage.
+
+- **OLD** top-15: a mix — 8 true silence (Jan–Feb) + 7 short self-excitement
+  overshoots.
+- **NEW** top-15: **all 15 are true silence**, `noise_missing = 0`, and they
+  cluster in the exact two months the window added:
+
+  > Apr-07, Mar-24, Mar-17, Mar-26, Feb-26, Apr-02, Mar-05, Mar-16, Mar-15,
+  > Feb-25, Mar-01, Mar-04, Mar-12, Apr-03, Mar-11
+
+Acoustic coverage over the window is 99.94 % (only 2.6 h missing), so these are
+not data gaps. They line up with the true seasonal decline in calling:
+
+| month | Nov | Dec | Jan | Feb | Mar | Apr |
+|:--|--:|--:|--:|--:|--:|--:|
+| calls (cox01) | 34 | 66 | 2,696 | 3,302 | 1,905 | 803 |
+
+Calling peaks Jan–Feb and falls through March–April — the window extension pulls
+the fit into the **end-of-calling season**.
+
+### Why the model can't absorb it {#sec-why}
+
+The background intensity is $\lambda_0(t)=\exp(X_t\beta + e^{\delta}W_t)$ plus a
+self-exciting term. The harmonics are **periodic** (a 2-month term repeats, it
+cannot trend to zero) and the GP is deliberately **short-range** (effective range
+$3\rho = 180$ min, kept short so it won't absorb the diel signal). Neither
+operates at the seasonal timescale, so $\lambda_0$ has a positive floor. Over a
+multi-day silence the compensator keeps accruing → huge $d_i$ → the
+over-dispersion. **A longer window cannot fix a floor problem** — we need a new
+component at the seasonal timescale that can pull $\log\lambda_0$ down.
+
+> Note: because the extreme NEW gaps are *long* silences (27–56 h) and
+> self-excitation decays over hours, those increments are **background-dominated**
+> — which is why lowering the seasonal background is the right lever.
+
+## The modeling question: estimate the decline, not hard-code it {#sec-plan}
+
+Hard-coding a departure date just trades one arbitrary edge for another. The
+decline — *when and how sharply calling falls off* — is itself the signal about
+NARW leaving the area, and should come out of the model with uncertainty. Two
+honest families:
+
+- **A. Smooth seasonal envelope** — a spline/basis in time, or a second
+  long-range additive GP. Gives a data-driven **rate curve**; not an
+  interpretable "they left" event.
+- **B. Latent regime / departure** — a change-point / logistic ramp (estimate
+  midpoint $t_0$ and steepness $k$) or a two-state Markov-modulated (present /
+  absent) process. Gives an **estimated departure/occupancy with a posterior**,
+  and its ~zero "absent" state fixes the budget problem by construction.
+
+Chosen direction: **curve now, state later** — Phase 1 (A) to fix the fit and
+reveal the decline shape, designed toward Phase 2 (B) for the interpretable
+regime.
+
+### Cost estimate {#sec-cost}
+
+| phase | what | effort | notes |
+|:--|:--|:--|:--|
+| **1** | seasonal spline in `Xm` | **Small, R-only** | sampler is dimension-generic (`p = beta.size()`); widen `Xm`, resize `beta`/`COVbeta` — **no C++**. Edit `config.R`, `02_fitLGCPSE.R`, cosmetic labels in `05_*`. |
+| **2** | logistic departure ramp ($t_0,k$) | **Medium, C++** | 2 params + one Metropolis block; thread a multiplicative `season(t)` through *every* intensity/integral in `RcppFtns.cpp` (compLam0, compIntLam0, RTC + loglik). No latent-state FB. |
+| **3** | two-state MMPP / HMM | **Large** | latent present/absent state per segment, FFBS in C++. Only if a single ramp proves too rigid (leave-and-return). |
+
+Phase 1 first is deliberate: its estimated curve tells us whether a single
+logistic in Phase 2 is even the right functional form.
+
+## Phase 1 prototype {#sec-prototype}
+
+A prototype mirrored `02_fitLGCPSE.R` exactly, changing only two things:
+coarsened `sback` 20 → 120 (for speed; ~13.6k → 2.3k knots) and inserted a
+natural-spline basis `ns(knts, df = 6)` into `Xm`. It fit the model twice
+(with / without spline).
+
+### Mechanics: confirmed R-only {#sec-mechanics}
+
+The design widened from **13 → 19 columns** and the Rcpp sampler ran unchanged to
+a clean exit (~6 min/fit). This confirms Phase 1 needs no C++ work.
+
+### The non-convergence lesson {#sec-nonconv}
+
+![Full-sampler prototype: both curves are GP-noise-dominated and trend the
+*wrong* way (up into April). Because the known-good baseline is *also* wrong
+here, this is purely a 1,500-iteration convergence artifact — not a
+model-structure failure.](../proto_spline/proto_background_curves.png){#fig-proto}
+
+The short chains are **not converged**: the `exp(δ·W)` GP term dominates and even
+imposes a spurious upward drift. Neither curve is scientifically readable — the
+prototype establishes *plumbing*, not biology. (An earlier summary that read
+"spring higher than winter" was this artifact, now understood.)
+
+### GLM probe: does the basis capture the decline? {#sec-glm}
+
+To isolate the *design-matrix* question from MCMC convergence, a fast Poisson GLM
+on binned counts compared `harmonics only` vs `harmonics + spline` (GP and
+self-excitation deliberately dropped — they converge instantly):
+
+| model | AIC | resid. deviance |
+|:--|--:|--:|
+| harmonics only | 39,749 | 38,485 |
+| harmonics + seasonal spline | 36,523 | 35,246 |
+| **Δ (6 params)** | **−3,226** | **−3,239** |
+
+![GLM probe: both models bend down through March–April tracking the observed
+daily rate (grey), confirming the design *can* represent the decline — the MCMC
+junk was non-convergence, not structure. The spline (red) improves the fit
+(ΔAIC 3,226), mainly by capturing the *asymmetry* of the decline; note the
+spline's unstable spike at the right edge (late April).](../proto_spline/proto_glm_probe.png){#fig-glm}
+
+### Caveats surfaced (feed these into the design) {#sec-caveats}
+
+1. **Harmonic / spline overlap.** The low-frequency harmonics (1–2 month) already
+   render much of the seasonal envelope (teal curve in @fig-glm). The spline's
+   marginal value is the *asymmetry* of the decline. Identifiability between the
+   spline and the 2-month harmonic must be handled (orthogonalize; decide whether
+   to keep both).
+2. **Boundary instability.** The natural spline spikes at the window edge
+   (@fig-glm, late April) — exactly the region we care about. Argues for a
+   penalty (P-spline) or explicit boundary-knot control.
+3. **Mean vs. self-excitation (open question).** The GLM validates the *mean*
+   only. Whether Phase 1 actually cures the RTC over-dispersion must be confirmed
+   by a full fit + `08_qqDispersion.R` (does `var_drop` collapse toward 1?). The
+   long-silence evidence (@sec-why) suggests it will, but this is the gate.
+
+## Verdict and next steps {#sec-next}
+
+- Phase 1 is **feasible (R-only)**, the design is **expressive enough** to
+  represent the seasonal decline, and the mechanism points the right way for the
+  over-dispersion.
+- **Do not** trust the full-range RTC MSD as a before/after metric across window
+  changes — use `var_drop` (08) and the central-95 % view.
+- **Next:** formalize into a PRD/plan that bakes in the three caveats above, then
+  run the real Phase-1 test — a full-resolution, full-iteration fit on the
+  cluster, validated with `08_qqDispersion.R`.
+
+---
+
+::: {.callout-note collapse="true"}
+## Reproduction
+
+- Diagnostics (per buoy, need the rtct object; 07 also needs `data/<buoy>_rms_data.rds`):
+  `Rscript 08_qqDispersion.R` and `Rscript 07_gapVsCoverage.R` (both loop all buoys, run without `--buoy`).
+- Prototype (from repo root): `BUOY=cox01 Rscript proto_spline/proto_fit_spline.R`
+  (full sampler, ~12 min) and `BUOY=cox01 Rscript proto_spline/proto_glm_probe.R`
+  (GLM probe, seconds).
+- Old vs new RTC comparison used the scratch dirs `cmp_old/` and `cmp_new/`
+  (kept for sharing). Regenerated `data/cox01.RData` is the Apr-30 window; the
+  stale Mar-1 copy is at `data/cox01.RData.oldwindow.bak`.
+:::
