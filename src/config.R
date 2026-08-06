@@ -53,7 +53,12 @@ buoy_settings <- list(
     noise_file  = "cox01_rms_data.rds",
     sst_col     = "COX01",
     deploy_time = "2021-02-26 21:03:00",
-    burn        = 130000   # LGCPSEspl 250k-chain: -2logL plateaus ~abs iter 125k-130k
+    burn        = 50000
+    # NB: burn is read by load_fit.R for POST-PROCESSING, not just fitting, so it
+    # must not exceed the chain length of whatever fit is being summarised. The
+    # archived 250k LGCPSEspl chain needs burn = 130000 (-2logL plateaus ~abs
+    # iter 125k-130k); see tag `spline-experiment-250k`. Do not set that here —
+    # it would break summaries of the 100k-iteration production fits.
   )
 )
 
@@ -119,20 +124,23 @@ harm_periods_lgcp <- c(
 #     num/fig + archive) lands in an isolated namespace and never collides with
 #     production 'LGCPSE' files.
 # Default OFF reproduces the exact 13-column LGCPSE design bit-for-bit.
-# Per-buoy enablement. The spline is currently scoped to COX01 only; NS01/NS02
-# stay production (bit-for-bit LGCPSE) until the COX01 7-month spline results are
-# reviewed. This is the ONLY place the spline is turned on/off — design.R and
-# fiti_lgcp both read the resolved scalar `seasonal_spline` below, so nothing
-# downstream changes. Buoys not listed default to FALSE (fail-safe: they read the
-# production LGCPSE fit that actually exists, never a phantom LGCPSEspl file).
+# Per-buoy enablement. This is the ONLY place the spline is turned on/off —
+# design.R and fiti_lgcp both read the resolved scalar `seasonal_spline` below,
+# so nothing downstream changes. Buoys not listed default to FALSE (fail-safe:
+# they read the production LGCPSE fit that actually exists, never a phantom
+# LGCPSEspl file).
 #
-# NOTE: cox01 = TRUE is the experiment default on the `seasonal-spline-phase3`
-# branch. master keeps all buoys FALSE — do not carry cox01 = TRUE onto master
-# when merging.
+# ALL FALSE is the correct production state. The spline was built to absorb the
+# end-of-season decline that the 7-month (Apr-30) window imports; the 5-month
+# window does not import it, and at 5 months all three buoys already pass the
+# RTC gate un-splined (var_drop 0.86 / 0.91 / 0.88). Turning cox01 = TRUE only
+# makes sense against a 7-month fit — and the one that exists never cleared the
+# gate (var_drop 18.6). See docs/five_month_assembly_status.md and the
+# `spline-experiment-250k` tag.
 seasonal_spline_by_buoy <- c(
   ns01  = FALSE,
   ns02  = FALSE,
-  cox01 = FALSE   # 5-month assembly: the spline exists only for the 7-month window
+  cox01 = FALSE
 )
 seasonal_spline <- isTRUE(unname(seasonal_spline_by_buoy[buoy]))
 cat(sprintf("Seasonal spline for %s: %s\n", buoy, seasonal_spline))
@@ -147,7 +155,7 @@ fiti_lgcp <- if (isTRUE(seasonal_spline)) 'LGCPSEspl' else 'LGCPSE'
 
 
 # ── MCMC settings ─────────────────────────────────────────────────────────────
-niters_lgcp         <- 250000 # 100000 — bumped for COX01 spline convergence (resume-and-extend)
+niters_lgcp         <- 100000   # the archived spline chain used 250000 (tag: spline-experiment-250k)
 adaptInterval       <- 200
 adaptFactorExponent <- 0.8
 sigma2_init         <- rep(0.2^2, 3)   # initial proposal variances
