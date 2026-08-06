@@ -1,6 +1,42 @@
 # Local disk inventory — what's on the laptop
 
-**Snapshot:** 2026-07-25 · **Repo:** `/Users/rob/Documents/_research/git_repos/sne_ns01`
+**Snapshot:** 2026-08-06 (was 2026-07-25) · **Repo:** `/Users/rob/Documents/_research/git_repos/sne_ns01`
+
+> ## ⛔ CORRECTION 2026-08-06 — the NS02 "7-month" label below was WRONG
+>
+> This doc (and `rtct_ns02_resume_postmortem.md`) labelled the laptop's NS02
+> `data/` + `rtct/` as **"7-mo (33,611) — STALE"**. They are **5-MONTH**:
+> `ts`max = 215,995 min ≈ **day 150 (Mar 1)**, not 305k/day 211.
+>
+> **33,611 is the 5-month NS02 count. 36,481 is the 7-month count.** The
+> postmortem anchored on 33,611 as a stale *7-month* vintage; in fact the two
+> numbers are different *windows*, not different vintages of the same window.
+> (The postmortem's action — don't rsync the laptop data up — was still right.)
+>
+> **Consequence:** the claim repeated across these docs that there is *"no
+> 5-month ns02 rtct anywhere"* is **false**. There is one, on this laptop, and it
+> is the source of the near-ideal NS02 5-month dispersion row. This removes the
+> principal obstacle to a 5-month-primary manuscript.
+>
+> **Lesson (same as the postmortem's):** verify a window by reading `max(ts)`,
+> never by inferring it from an event count or a file date.
+
+> ## Tree is now uniformly 5-MONTH (2026-08-06)
+>
+> Canonical paths (`data/<buoy>.RData`, `rtct/<buoy>/<buoy>LGCPSE_rtct.RData`,
+> `fig/`) all hold **5-month** artifacts. Both windows are kept, window-suffixed,
+> so an rsync from the node can no longer silently clobber the other window:
+>
+> | canonical (5-mo, active) | parked |
+> |---|---|
+> | `data/{ns01,ns02,cox01}.RData` | `data/cox01.RData.7mo`; `*.5mo` labelled copies of all three |
+> | `rtct/<b>/<b>LGCPSE_rtct.RData` | `.5mo` + `.7mo` suffixed copies; `cox01LGCPSEspl_rtct.RData` (7-mo spline) |
+> | `fig/cox01/QQband*.pdf`, `QQmsd.tex` | `fig/cox01/*.7mo-spline.*` |
+> | `fig/combined/qq_dispersion.*` | `fig/combined/qq_dispersion.MIXED.*` |
+>
+> `src/config.R` `seasonal_spline_by_buoy['cox01']` set **FALSE** (the spline is a
+> 7-month-only object). ⚠️ `analysis_end` in config is still **2022-04-30** — it
+> only matters if `01_data.R` is re-run, which would require a re-fit anyway.
 
 A window-tagged census of manuscript-relevant artifacts on **this machine**, so
 we know what can be assembled locally vs. what must come from the node. Windows
@@ -25,16 +61,28 @@ verified by event count / `ts` axis, not just file dates:
 | buoy | data | rtct | fit | params (DIC/XB/coeffs/Lam/Num/CI) | Q-Q |
 |---|---|---|---|---|---|
 | **ns01** | 5-mo (13017) | 5-mo `.5mo` + 7-mo `.7mo`/base | none (benchmark only) | 5-mo (Jun 22) | 5-mo (Jun 22) + 5v7 windowCompare (Jul 14) |
-| **ns02** | 7-mo (33611) | **7-mo only** (33611) | none | 5-mo (Jun 22) | 5-mo (Jun 22) |
+| **ns02** | **5-mo (33611)** | **5-mo (33611)** | none | 5-mo (Jun 22) | 5-mo (Jun 22) |
+
+> **✅ NS02 resolved (2026-08-06)** — supersedes the 07-27 "vintage mismatch" note.
+> The laptop's ns02 `data` + `rtct` are **5-month (33,611 ev, `ts`max day 150)**,
+> verified by `max(ts)`. They are not a stale 7-month vintage. The cluster's
+> 36,481 is the **7-month** NS02 — a different window, not a newer vintage of the
+> same one. Both are valid; they answer different questions. NS02 is therefore
+> **fully covered at 5-month locally** (data + rtct + params + Q-Q).
 | **cox01** | 7-mo (8806) + 5-mo bak | 7-mo (8806, spline+non-spline); 5-mo in `cmp_old/` (6098) | none | 5-mo (Jun 22) | **7-mo (Jul 24)** + 5-mo in `cmp_old/` |
 
-**Coherence notes**
-- **5-month is internally consistent for ns01 and cox01** (data + rtct + params
-  all available at 5-mo). **ns02 at 5-month is outputs-only**: the 5-mo params
-  (Jun 22) survive, but local ns02 data is 7-mo and there is **no 5-mo ns02 rtct
-  anywhere** — nothing to regenerate ns02's 5-mo pieces from, locally.
-- **cox01 `fig/` is self-inconsistent**: params are 5-mo (Jun 22) but the live
-  Q-Q is 7-mo/spline (Jul 24). Its 5-mo Q-Q is preserved in `cmp_old/`.
+**Coherence notes (rewritten 2026-08-06)**
+- **5-month is internally consistent for all three buoys.** data + rtct + params
+  + Q-Q are present locally for ns01, ns02 and cox01, and each buoy's `data` and
+  `rtct` event counts match exactly (13017 / 33611 / 6098).
+- The Jun-22 params were built at **sback = 20**, confirmed structurally: each
+  `fig/<buoy>/xb.RData` has exactly `3 × (maxT/20 + 1)` rows against that buoy's
+  own 5-month `maxT` (10873 / 10801 / 10762). `knts` is read from the fit file by
+  `src/load_fit.R`, not rebuilt from config, so the row count reflects the **fit's**
+  sback — i.e. the 5-month fits themselves were sback = 20.
+- cox01's `fig/` self-inconsistency is **resolved**: the 5-mo Q-Q from `cmp_old/`
+  is now at the canonical path; the Jul-24 7-mo spline Q-Q is parked as
+  `*.7mo-spline.*`.
 
 ## Directory detail
 

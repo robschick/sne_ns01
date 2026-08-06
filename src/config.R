@@ -132,7 +132,7 @@ harm_periods_lgcp <- c(
 seasonal_spline_by_buoy <- c(
   ns01  = FALSE,
   ns02  = FALSE,
-  cox01 = TRUE
+  cox01 = FALSE   # 5-month assembly: the spline exists only for the 7-month window
 )
 seasonal_spline <- isTRUE(unname(seasonal_spline_by_buoy[buoy]))
 cat(sprintf("Seasonal spline for %s: %s\n", buoy, seasonal_spline))
