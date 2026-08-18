@@ -12,3 +12,4 @@ rtct/
 .DS_Store
 .Rhistory
 out/
+rosm.cache/
