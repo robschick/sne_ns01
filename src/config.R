@@ -71,10 +71,13 @@ buoy_cfg <- buoy_settings[[buoy]]
 # Note: timestamps are labeled UTC but are actually EST.
 std_str       <- '2021-10-01 00:00:00'
 std           <- as.POSIXct(std_str, tz = 'UTC')
-# ~7-month analysis window (Oct 1 → Apr 30). Raw call data extends to
-# late-April 2022 for NS01/NS02 and mid-May 2022 for COX01, so this cut
-# is at the NS01/NS02 data limit (shared window across all three buoys).
-analysis_end  <- as.POSIXct('2022-04-30 00:00:00', tz = 'UTC')
+# Interim COX01 window: Oct 1 → Feb 15. The delivered COX01 202202 file was
+# Excel-mangled (times collapsed into ~27.8-h bins); all corrupt rows are
+# ≥ Feb 22 2022 and clean data ends Feb 16 18:48, so this cut excludes them
+# entirely. See docs/cox01_timestamp_provenance.md. NB this setting is GLOBAL:
+# do not rebuild/refit NS01 or NS02 while it is in place (previous shared
+# value: '2022-04-30 00:00:00').
+analysis_end  <- as.POSIXct('2022-02-15 00:00:00', tz = 'UTC')
 
 # Harmonic anchor: minutes elapsed since midnight on the start date.
 # Derived from std so it stays in sync — 0 min for a midnight origin.
