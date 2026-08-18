@@ -26,6 +26,7 @@
 rm(list = ls())
 library(coda); library(tidyverse); library(batchmeans); library(xtable)
 
+source('src/design.R')  # design_columns(); config sourced in loop
 source('src/RFtns.R')   # bm helpers, lb95/ub95, fmt_period; config sourced in loop
 
 buoys       <- c('ns01', 'ns02', 'cox01')
@@ -59,9 +60,13 @@ for (b in buoys) {
   source('src/load_fit.R')      # postSamples, Xm, betaInd, deltaInd, alphaInd, etaInd
 
   # ── Coefficients ──────────────────────────────────────────────────────────
-  harm_labels <- unlist(lapply(fmt_period(harm_periods_lgcp), function(lbl)
+  # design_columns() owns the conditional 2-month drop and spline count, so the
+  # labels track the design whether the spline is ON ('LGCPSEspl') or OFF.
+  cols          <- design_columns(design_cfg())
+  harm_labels   <- unlist(lapply(fmt_period(cols$periods), function(lbl)
     c(paste(lbl, 'sine'), paste(lbl, 'cosine'))))
-  Predictors  <- c('Noise', 'SST', harm_labels)
+  spline_labels <- if (cols$n_spline) paste('Spline', seq_len(cols$n_spline)) else character(0)
+  Predictors    <- c('Noise', 'SST', harm_labels, spline_labels)
 
   postbetas <- postSamples[, betaInd[-1], drop = FALSE]   # drop intercept
   stopifnot(ncol(postbetas) == length(Predictors))

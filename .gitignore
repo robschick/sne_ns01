@@ -11,3 +11,5 @@ rtct/
 .Rproj.user
 .DS_Store
 .Rhistory
+out/
+rosm.cache/
