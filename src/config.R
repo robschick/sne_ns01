@@ -54,7 +54,7 @@ buoy_settings <- list(
     noise_file = "cox01_rms_data.rds",
     sst_col = "COX01",
     deploy_time = "2021-02-26 21:03:00",
-    burn = 50000
+    burn = 75000   # clean-data refit 2026-08: keep last 25k of the 100k chain
     # NB: burn is read by load_fit.R for POST-PROCESSING, not just fitting, so it
     # must not exceed the chain length of whatever fit is being summarised. The
     # archived 250k LGCPSEspl chain needs burn = 130000 (-2logL plateaus ~abs
@@ -72,12 +72,11 @@ buoy_cfg <- buoy_settings[[buoy]]
 # Note: timestamps are labeled UTC but are actually EST.
 std_str <- '2021-10-01 00:00:00'
 std <- as.POSIXct(std_str, tz = 'UTC')
-# Interim COX01 window: Oct 1 → Feb 15. The delivered COX01 202202 file was
-# Excel-mangled (times collapsed into ~27.8-h bins); all corrupt rows are
-# ≥ Feb 22 2022 and clean data ends Feb 16 18:48, so this cut excludes them
-# entirely. See docs/cox01_timestamp_provenance.md. NB this setting is GLOBAL:
-# do not rebuild/refit NS01 or NS02 while it is in place (previous shared
-# value: '2022-04-30 00:00:00').
+# 5-month production window (Oct 1 → Mar 1), shared by all three buoys.
+# COX01 uses the clean NEFSC re-export received 2026-08-19 (the original
+# 202202 delivery was Excel-mangled; see docs/cox01_timestamp_provenance.md).
+# 2022-04-30 was the shelved 7-month experiment value — do not restore it
+# casually; 5-month was made primary on 2026-08-06.
 analysis_end <- as.POSIXct('2022-03-01 00:00:00', tz = 'UTC')
 
 # Harmonic anchor: minutes elapsed since midnight on the start date.
