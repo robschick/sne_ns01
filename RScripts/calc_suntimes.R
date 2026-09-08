@@ -31,3 +31,4 @@ sne_times <- getSunlightTimes(
   tz = "UTC",
   keep = c("sunrise", "nauticalDawn")
 )
+write_csv(sne_times, 'fig/combined/sne_solar_times.csv')
