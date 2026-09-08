@@ -46,4 +46,14 @@ if [[ -n "${EXPECTED_BRANCH:-}" && "${BRANCH}" != "${EXPECTED_BRANCH}" ]]; then
   exit 1
 fi
 
+# --- Data-window guard --------------------------------------------------------
+# 02_fitLGCPSE.R uses data/${BUOY}.RData as-is; config.R's analysis_end only
+# bites when 01_data.R is re-run. Print the data file's provenance and abort if
+# it extends past the configured window (i.e. 01_data.R was skipped). This
+# would have caught the Aug-2026 NS01/NS02 re-fits that ran on 7-month data.
+Rscript src/check_data_window.R --buoy="${BUOY}" || {
+  echo "ERROR: data window check failed for ${BUOY:-UNSET} -- aborting" >&2
+  exit 1
+}
+
 srun Rscript 02_fitLGCPSE.R
