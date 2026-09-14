@@ -29,6 +29,11 @@ Plus, shared across buoys: `data/sst/2025-11-20_SNE_buoys_sst-data.csv`
 Exact filenames and per-buoy SST columns are pinned in `buoy_settings` in
 `src/config.R`.
 
+The call RDS files are built from the NEFSC narwlog CSVs in
+`data/raw_calls/` by `00_wrangle_calls.R`, which also writes the shareable
+Parquet release (`data/release/*.parquet`; columns documented in
+`docs/data_dictionary.md`).
+
 ### Software
 
 - **R ≥ 4.1** with `coda`, `tidyverse`, `batchmeans`, `xtable`, `Rcpp`,
