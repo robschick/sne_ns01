@@ -126,6 +126,41 @@ Rows are sorted by `site`, then `start_utc`.
 - **Precision guard.** The build refuses any file whose raw `start_time`
   values carry fewer than 10 significant digits.
 
+## Covariate: sea-surface temperature
+
+The model's SST covariate is not part of the Parquet release. It is a
+separate CSV, `data/sst/2025-11-20_SNE_buoys_sst-data.csv`, that
+`01_data.R` reads directly.
+
+- **Source.** NOAA OISST v2.1 (`NOAA/CDR/OISST/V2_1`, band `sst`). It is
+  daily and global on a 0.25° grid, and was extracted via Google Earth Engine
+  on 2025-11-20. The extraction script is `src/gee/oisst_sst_extract.js`.
+- **Spatial sampling.** Each site has its own series, taken at that site's
+  mooring position. The script uses the coordinates in `data/buoy_locs.csv`,
+  which are within about 50 m of `sites.parquet`, well inside one cell. It takes
+  a mean over a 2 km buffer at 5 km scale. That buffer is much smaller than an
+  OISST cell (about 21 × 28 km here), so the value is in effect the single
+  grid cell containing the site. The three sites fall in three different
+  cells. No site borrows a neighbouring site's or an NDBC buoy's record.
+- **Temporal coverage.** Each site is extracted only over its deployment
+  span: COX01 2021-02-26 to 2022-10-08 (590 d), NS01 2021-03-17 to 2022-05-29
+  (439 d), NS02 2021-03-10 to 2022-11-09 (610 d). There are no missing days.
+  Days are UTC calendar days.
+- **Format.** `date, COX01, NS01, NS02` in °C, one row per day. A site is
+  blank outside its span. The Earth Engine export is long format
+  (`id, date, sst_C`); the wide CSV is a pivot of it, and the pivot step was
+  not scripted.
+- **Use in the model.** `01_data.R` selects the site's column (`sst_col` in
+  `src/config.R`) and restricts it to the analysis window. It then z-scores
+  the series within that window and joins it to the knots by date, so the
+  covariate is constant within each day. It enters the design matrix as
+  column 3 (`src/design.R`).
+- **Validation.** It was compared against in-situ water temperature (`WTMP`)
+  from NDBC buoys at Block Island (2021) and Buzzards Bay (2022). The
+  comparison script is
+  `manuscripts/schick_etal_hawkes_SNE/covariate_data/plot_sst_gee_overlay.R`
+  and lives outside this repo.
+
 ## Reading the files
 
 R:
