@@ -3,7 +3,9 @@
 # the three case studies on the ESRI World Ocean Base tile layer:
 #   (a) Cape Cod Bay — Case Study 1 (single MARU, NEFSC SBNMS 2009-03, ch. 10)
 #                      Case Study 3 (2009 CCB MARU array)
-#   (b) Southern New England — Case Study 2 (COX01, NS01, NS02 buoys)
+#   (b) Southern New England — Case Study 2 (COX01, NS01, NS02 buoys), with
+#       the BOEM wind energy lease areas (data/ne_wea.shp, copied from the
+#       sne_displacement repo; see data/ne_wea.qmd)
 # Styled after 09_buoyMap.R.
 #
 # Usage:   Rscript 09b_caseStudyMap.R
@@ -71,6 +73,21 @@ to_sf <- function(df) {
 ccb_pts <- to_sf(bind_rows(cs1, cs3))
 sne_pts <- to_sf(cs2)
 
+# Keep commercial lease blocks only: the easements (South Fork, Vineyard Wind)
+# and the OCS-A 0506 right-of-way grant are export-cable corridors that draw as
+# trailing lines. Dissolve the leases into one outline, working in UTM 19N so
+# the union is planar; the +/-100 m buffer closes slivers where adjacent lease
+# edges don't quite coincide, which otherwise draw as stray interior dashes.
+wea <- st_read('data/ne_wea.shp', quiet = TRUE) %>%
+  filter(LEASE_TYPE == 'Commercial', LEASE_NUMB != 'OCS-A 0506') %>%
+  st_transform(26919) %>%
+  st_make_valid() %>%
+  st_union() %>%
+  st_buffer(100, joinStyle = 'MITRE', mitreLimit = 5) %>%
+  st_buffer(-100, joinStyle = 'MITRE', mitreLimit = 5) %>%
+  st_sf(geometry = .) %>%
+  st_transform(4326)
+
 # ── Extents (lon/lat), then limits in Web Mercator to match the tiles ───────
 pad_bbox <- function(pts, pad_x, pad_y) {
   bb <- st_bbox(pts)
@@ -94,17 +111,19 @@ array_lab <- st_sf(
 )
 
 # ── Panel builder ───────────────────────────────────────────────────────────
-make_panel <- function(pts, ext, title) {
+# `under` takes optional layers drawn between the tiles and the points.
+make_panel <- function(pts, ext, title, under = NULL) {
   lims <- ext %>% st_as_sfc() %>% st_transform(3857) %>% st_bbox()
   ggplot() +
     annotation_map_tile(type = esri_ocean, zoomin = 1, progress = 'none') +
+    under +
     layer_spatial(
       pts,
       aes(fill = case_study, shape = case_study),
       size = 2.5,
       colour = 'black',
       stroke = 0.6,
-      show.legend = TRUE
+      show.legend = c(fill = TRUE, shape = TRUE, colour = FALSE)
     ) +
     # Each panel holds only some case studies; show.legend + override.aes keep
     # every key drawn so the single collected legend is complete.
@@ -152,7 +171,27 @@ plot.ccb <- make_panel(ccb_pts, ccb_ext, '(a) Cape Cod Bay') +
     fontface = 'bold'
   )
 
-plot.sne <- make_panel(sne_pts, sne_ext, '(b) Southern New England') +
+# WEA outline styled as in sne_displacement (orange, unfilled). Mapping colour
+# to a constant gives it its own key in the collected legend.
+wea_layers <- list(
+  geom_sf(
+    data = wea,
+    aes(colour = 'Wind energy lease areas'),
+    fill = NA,
+    linewidth = 0.5
+  ),
+  scale_colour_manual(
+    values = c('Wind energy lease areas' = 'orange'),
+    name = NULL
+  )
+)
+
+plot.sne <- make_panel(
+  sne_pts,
+  sne_ext,
+  '(b) Southern New England',
+  under = wea_layers
+) +
   geom_sf_text(
     data = sne_pts,
     aes(label = label),
@@ -160,7 +199,8 @@ plot.sne <- make_panel(sne_pts, sne_ext, '(b) Southern New England') +
     size = 3.2,
     fontface = 'bold'
   ) +
-  theme(legend.position = 'none')
+  # Case-study keys come from panel (a); keep only the WEA key here.
+  guides(fill = 'none')
 
 # ── Locator inset: both panel extents boxed and lettered ────────────────────
 coast <- ne_states(
@@ -199,8 +239,8 @@ plot.sne <- plot.sne +
     plot.inset,
     left = 0.015,
     bottom = 0.02,
-    right = 0.33,
-    top = 0.36,
+    right = 0.26,
+    top = 0.33,
     align_to = 'panel'
   )
 
