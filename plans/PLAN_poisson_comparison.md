@@ -33,9 +33,36 @@ cluster run.
   `--wav/--pitch/--mono/--audio-preview` flags and this plan. Before pushing
   more work, check whether #13 is still open (`gh pr view 13 --json state`);
   if it has merged, branch fresh off master.
-- Open small item: change the panel subtitle to "Grey: calls that start a
-  conversation. Green: plus calls answering one heard minutes earlier."
-  Reason: "expected if independent" wrongly implies grey is a Poisson fit.
+
+## Implemented (2026-10-20, branch `feat/poisson-comparison`)
+
+All three items are built. The subtitle change is done too.
+
+- `src/anim_rate.R`: `smooth_rate()`, `poisson_rate()`, `sim_poisson()`,
+  `pick_poisson_seed()`. `rate$poisson` is always computed, so the dashed line
+  is in every still and in `sne_hawkes.mp4`.
+- `src/anim_render.R`: `render_frames(draw, n, ...)` now takes a frame
+  function; `sweep_times()` gives the frame times.
+- `src/anim_draw.R`: dashed blue Poisson line and three-line subtitle in
+  `draw_frame()`; new `draw_compare_frame()` for the clip.
+- `src/anim_gaps.R`: `gap_stats()`, `compare_gaps()` (20 replicates),
+  `plot_gap_distribution()`. Runs on every invocation (~1 s).
+- `--poisson-clip`: `sne_poisson_vs_real.mp4` (28 s: 12 s real with sound,
+  1 s pause, 12 s Poisson with sound, 3 s hold with caption),
+  `still_poisson_vs_real.png`, `audio/real.wav`, `audio/poisson.wav`. Seeds
+  7 / 6 / 72 give exactly 56 / 66 / 215 calls. NS02 minutes 50–100 are shaded.
+
+Notes:
+
+- In window 2 the dashed line integrates to 0.98 / 0.84 / 0.87 of the
+  observed count (COX01 / NS01 / NS02), not ~1. The window was picked for
+  being busy, and the 60-min kernel spreads its calls into quieter time
+  outside it. Over the whole fit window, the integral matches by construction.
+- `gap_summary.csv` reproduces the evidence table. The real values match
+  exactly. The Poisson values are the mean of 20 replicates, so they differ
+  from the seed-1 numbers by about 0.01.
+- The clip runs 28 s, not 10–15 s, because it plays the two tracks one after
+  the other. For a shorter clip, lower `clip_secs` in `10_hawkesAnim.R`.
 
 ## Why the grey line is not the Poisson line
 
@@ -114,5 +141,7 @@ The Poisson var/mean is above 1 only because the smoothed rate varies.
   answering, but grey also rises (17→95/h), so don't claim "only a few whales".
 - Neither line counts whales; green is a rate given past calls, not a
   forecast.
+- The dashed line is a stand-in, not a fitted model: the observed counts
+  smoothed over about an hour. A fitted version is in the paper.
 - The Poisson line can't follow minute-scale clustering. Real data have ~1.5×
   more short gaps than Poisson allows, at every site.

@@ -6,23 +6,23 @@
 
 ffmpeg_bin <- function() Sys.getenv('FFMPEG', 'ffmpeg')
 
-# Renders secs * fps frames spanning the window, plus hold_secs * fps copies of
-# the final frame carrying `caption`. Returns the frame directory. The default
-# 12.8 x 7.2 in at 150 dpi gives 1920 x 1080 (16:9, full HD).
-render_frames <- function(rate, calls, basemap, t0, win_min, ymax, secs = 22, fps = 30,
-                          hold_secs = 0, caption = NULL, outdir = 'frames',
-                          width = 12.8, height = 7.2, dpi = 150,
-                          cores = parallel::detectCores(), ...) {
+# Frame times (minutes since t0) for a clip that sweeps the window in `secs`,
+# then holds the final frame for `hold_secs`. `hold` marks the held frames.
+sweep_times <- function(win_min, secs, fps, hold_secs = 0) {
+  n_hold <- round(hold_secs * fps)
+  data.frame(now  = c(seq(0, win_min, length.out = secs * fps), rep(win_min, n_hold)),
+             hold = rep(c(FALSE, TRUE), c(secs * fps, n_hold)))
+}
+
+# Renders frames 1..n, where draw(i) returns frame i's plot. Returns the frame
+# directory. The default 12.8 x 7.2 in at 150 dpi gives 1920 x 1080 (16:9).
+render_frames <- function(draw, n, outdir = 'frames', width = 12.8, height = 7.2,
+                          dpi = 150, cores = parallel::detectCores()) {
   unlink(outdir, recursive = TRUE); dir.create(outdir, recursive = TRUE)
-  nows <- seq(0, win_min, length.out = secs * fps)
-  nows <- c(nows, rep(win_min, round(hold_secs * fps)))
-  last <- length(nows) - round(hold_secs * fps)
-  res <- parallel::mclapply(seq_along(nows), function(i) {
-    cap <- if (i > last) caption
-    ggsave(sprintf('%s/f%05d.png', outdir, i),
-           draw_frame(nows[i], rate, calls, basemap, t0, win_min, ymax, caption = cap, ...),
-           width = width, height = height, dpi = dpi, bg = 'white')
-  }, mc.cores = cores)
+  res <- parallel::mclapply(seq_len(n), function(i)
+    ggsave(sprintf('%s/f%05d.png', outdir, i), draw(i),
+           width = width, height = height, dpi = dpi, bg = 'white'),
+    mc.cores = cores)
   errs <- vapply(res, inherits, logical(1), 'try-error')
   if (any(errs)) stop('Frame rendering failed: ', res[[which(errs)[1]]])
   outdir
