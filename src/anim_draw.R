@@ -37,11 +37,11 @@ make_basemap <- function(sites, coast = NULL, lease_areas = NULL, buffer_km = 25
   coast <- st_transform(coast, crs)
 
   layers <- list(
-    geom_sf(data = coast, fill = 'grey88', colour = 'grey60', linewidth = 0.2,
+    geom_sf(data = coast, fill = 'grey85', colour = 'grey55', linewidth = 0.3,
             inherit.aes = FALSE),
     if (!is.null(lease_areas))
       geom_sf(data = st_transform(st_as_sf(lease_areas), crs), fill = NA,
-              colour = 'grey50', linewidth = 0.3, linetype = 'dashed', inherit.aes = FALSE)
+              colour = 'grey45', linewidth = 0.45, linetype = 'dashed', inherit.aes = FALSE)
   )
   coord <- coord_sf(crs = crs, default_crs = NULL, xlim = bb[c('xmin', 'xmax')],
                     ylim = bb[c('ymin', 'ymax')], expand = FALSE, datum = NA)
@@ -65,28 +65,29 @@ draw_frame <- function(now, rate, calls, basemap, t0, win_min, ymax,
 
   map <- ggplot() + basemap$layers +
     geom_point(data = ring, aes(x, y, size = 6 + 22 * r, alpha = 1 - r),
-               shape = 1, colour = col_call, stroke = 1.2) +
-    geom_point(data = node, aes(x, y, size = 3 + 12 * pmin(lambda, ymax) / ymax,
+               shape = 1, colour = col_call, stroke = 1.6) +
+    geom_point(data = node, aes(x, y, size = 4 + 14 * pmin(lambda, ymax) / ymax,
                                 fill = pmin(lambda, ymax)), shape = 21) +
-    geom_text(data = sxy, aes(x, y, label = label), nudge_y = 9000, size = 3.5,
+    geom_text(data = sxy, aes(x, y, label = label), nudge_y = 15000, size = 5.5,
               fontface = 'bold') +
-    scale_fill_viridis_c(limits = c(0, ymax), name = 'calls/h') +
+    scale_fill_viridis_c(limits = c(0, ymax), name = 'calls per hour',
+                         guide = guide_colourbar(title.position = 'top', title.hjust = 0.5)) +
     scale_size_identity() + scale_alpha_identity() +
-    basemap$coord + theme_void(base_size = 12) +
-    theme(legend.position = 'bottom', legend.key.width = unit(1.2, 'cm'),
-          plot.title = element_text(face = 'bold')) +
+    basemap$coord + theme_void(base_size = 17) +
+    theme(legend.position = 'bottom', legend.key.width = unit(2, 'cm'),
+          plot.title = element_text(face = 'bold', size = 22)) +
     labs(title = format(t0 + now * 60, '%d %b %Y  %H:%M %Z', tz = tz))
 
   ts_p <- ggplot(r, aes(t_min)) +
-    geom_line(aes(y = pmin(mu, ymax)), colour = col_bg, linewidth = 0.6) +
-    geom_line(aes(y = pmin(lambda, ymax)), colour = col_hawkes, linewidth = 0.7) +
+    geom_line(aes(y = pmin(mu, ymax)), colour = col_bg, linewidth = 1) +
+    geom_line(aes(y = pmin(lambda, ymax)), colour = col_hawkes, linewidth = 1.1) +
     geom_segment(data = cs, aes(x = t_min, xend = t_min, y = 0, yend = ymax * 0.25),
-                 colour = col_call, linewidth = 0.4) +
+                 colour = col_call, linewidth = 0.55) +
     facet_grid(site ~ ., switch = 'y', drop = FALSE) +
     scale_x_continuous(limits = c(0, win_min), expand = c(0, 0), name = 'minutes') +
     scale_y_continuous(limits = c(0, ymax), name = 'calls per hour') +
-    theme_minimal(base_size = 12) +
-    theme(strip.text.y.left = element_text(angle = 0, face = 'bold'),
+    theme_minimal(base_size = 17) +
+    theme(strip.text.y.left = element_text(angle = 0, face = 'bold', size = 18),
           strip.placement = 'outside', panel.grid.minor = element_blank()) +
     labs(subtitle = paste('Grey: expected calling if calls were independent.',
                           'Green: each call raises the chance of another, then it fades.',
@@ -94,6 +95,6 @@ draw_frame <- function(now, rate, calls, basemap, t0, win_min, ymax,
 
   p <- map + ts_p + plot_layout(widths = c(1, 1.5))
   if (is.null(caption)) return(p)
-  cap <- grid::textGrob(caption, gp = grid::gpar(fontsize = 15, fontface = 'bold'))
+  cap <- grid::textGrob(caption, gp = grid::gpar(fontsize = 19, fontface = 'bold'))
   wrap_elements(p) / wrap_elements(full = cap) + plot_layout(heights = c(1, 0.13))
 }
