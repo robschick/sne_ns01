@@ -59,3 +59,48 @@ site_summary <- function(fits, calls, t0, win_min, branching = NULL) {
   }
   out
 }
+
+
+# ── Poisson stand-in ───────────────────────────────────────────────────────
+# A STAND-IN, NOT A FITTED MODEL: the observed per-minute counts smoothed with a
+# Gaussian kernel (sd 60 min, about the GP scale), so one smooth rate carries
+# every call and nothing answers anything. A fitted LGCP with no
+# self-excitation (plan option 4) would replace it.
+
+# Smoothed per-minute rate (calls/min) at minute midpoints from..to-1 (minutes
+# on the scale of `tc`). Calls within 4 sd outside the range are counted, so
+# the edges aren't biased low.
+smooth_rate <- function(tc, from, to, sd_min = 60) {
+  half  <- ceiling(4 * sd_min)
+  edges <- seq(floor(from) - half, ceiling(to) + half)
+  n     <- tabulate(findInterval(tc, edges, left.open = FALSE), length(edges) - 1)
+  k     <- dnorm(-half:half, sd = sd_min); k <- k / sum(k)
+  sm    <- stats::filter(n, k, sides = 2)
+  keep  <- seq(half + 1, length(n) - half)
+  data.frame(t_min = edges[keep] + 0.5, rate = as.numeric(sm[keep]))
+}
+
+# Per-site Poisson rate (calls/h) on the rate_grid() time grid
+poisson_rate <- function(calls, t0, win_min, burn_min = 60, dt = 0.1, sd_min = 60,
+                         sites = unique(calls$site)) {
+  tg <- seq(-burn_min, win_min, by = dt)
+  do.call(rbind, lapply(sites, function(s) {
+    sm <- smooth_rate(mins_since(calls$time_utc[calls$site == s], t0),
+                      -burn_min - 1, win_min + 1, sd_min)
+    data.frame(site = s, t_min = tg, poisson = 60 * approx(sm$t_min, sm$rate, tg)$y)
+  }))
+}
+
+# One Poisson call set from a per-minute rate (smooth_rate() output): a Poisson
+# count per minute bin, placed uniformly within the bin. Returns sorted minutes.
+sim_poisson <- function(sm, seed = 1) {
+  set.seed(seed)
+  n <- rpois(nrow(sm), sm$rate)
+  sort(rep(sm$t_min - 0.5, n) + runif(sum(n)))
+}
+
+# Seed in `seeds` whose simulated total is closest to `n_target` (first wins ties)
+pick_poisson_seed <- function(sm, n_target, seeds = 1:200) {
+  d <- vapply(seeds, function(s) abs(length(sim_poisson(sm, s)) - n_target), numeric(1))
+  seeds[which.min(d)]
+}

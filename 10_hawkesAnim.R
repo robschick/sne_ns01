@@ -1,6 +1,8 @@
 # =============================================================================
 # 10_hawkesAnim.R — NARWC 2026 talk assets: SNE upcall animation + Hawkes
-# "family tree" schematic. Plan: plans/PLAN_sne_hawkes_animation.md
+# "family tree" schematic, plus the Poisson comparison (dashed line, companion
+# clip, gap slide). Plans: plans/PLAN_sne_hawkes_animation.md,
+# plans/PLAN_poisson_comparison.md
 #
 # Needs out/anim/<buoy>_anim.rds for each site to show, from 10a_animExport.R
 # (cluster: aci_anim_export.sh). Sites without an export are left out.
@@ -15,11 +17,17 @@
 #   Rscript 10_hawkesAnim.R --pitch=1.5     # extra pitch shift on the clip
 #   Rscript 10_hawkesAnim.R --mono          # no left/right panning by site
 #   Rscript 10_hawkesAnim.R --audio-preview # soundtrack variants as .wav only
+#   Rscript 10_hawkesAnim.R --poisson-clip  # real vs Poisson companion clip
 #   FFMPEG=/path/to/ffmpeg Rscript 10_hawkesAnim.R --video   # non-PATH ffmpeg
 #
 # Output (fig/talk/): sne_hawkes.mp4, hawkes_schematic.pdf/.png,
 #   still_{start,busiest,end}.png, windows.csv, site_summary.csv, rate_check.csv,
-#   audio/*.wav (--audio-preview). Video is 1920 x 1080, 30 fps.
+#   gap_distribution.pdf/.png, gap_summary.csv, audio/*.wav (--audio-preview),
+#   sne_poisson_vs_real.mp4 + audio/{real,poisson}.wav (--poisson-clip).
+#   Video is 1920 x 1080, 30 fps.
+#
+# The Poisson line and calls are a stand-in, not a fitted model: the observed
+# counts smoothed with a 60-min Gaussian kernel (see poisson_rate()).
 # =============================================================================
 
 rm(list = ls())
@@ -34,6 +42,7 @@ win_min   <- 120
 secs      <- 22
 fps       <- 30
 hold_secs <- 3
+clip_secs <- 12           # companion clip: seconds per pass (real, then Poisson)
 out_dir   <- 'fig/talk'
 takeaway  <- paste('Calls aren\'t independent. Counting them as if they were mixes up',
                    'how many whales are calling with how much they\'re answering each other.',
@@ -99,6 +108,7 @@ cat(sprintf('Window: %s to %s (%s)\n', format(t0, '%Y-%m-%d %H:%M', tz = tz),
 
 # ── Rate ───────────────────────────────────────────────────────────────────
 rate <- rate_grid(calls, background, fits, t0, win_min)
+rate$poisson <- poisson_rate(calls, t0, win_min, sites = fits$site)$poisson   # same grid
 rate_ok <- check_rate(rate, calls, fits, t0, win_min)
 write.csv(rate_ok, file.path(out_dir, 'rate_check.csv'), row.names = FALSE)
 print(rate_ok)
@@ -152,12 +162,73 @@ if (do_video) {
   audio  <- build_audio(win_calls, win_min, secs, total_secs = secs + hold_secs,
                         upcall_wav = wav, pitch = pitch, pan = pan,
                         path = file.path(tempdir(), 'upcalls.raw'))
-  frames <- render_frames(rate, win_calls, basemap, t0, win_min, ymax, secs = secs,
-                          fps = fps, hold_secs = hold_secs, caption = takeaway,
-                          outdir = file.path(tempdir(), 'frames'), tz = tz)
+  ft     <- sweep_times(win_min, secs, fps, hold_secs)
+  frames <- render_frames(function(i)
+    draw_frame(ft$now[i], rate, win_calls, basemap, t0, win_min, ymax, tz = tz,
+               caption = if (ft$hold[i]) takeaway),
+    nrow(ft), outdir = file.path(tempdir(), 'frames'))
   video  <- encode_video(frames, audio, file.path(out_dir, 'sne_hawkes.mp4'), fps = fps)
   cat('Wrote', video, '\n')
 }
+
+
+# ── Poisson comparison: companion clip ─────────────────────────────────────
+# One simulated Poisson call set per site from the smoothed rate, with the seed
+# whose total is closest to the observed count, so only the arrangement differs.
+# Pass 1 reveals the real calls with their sound, pass 2 the Poisson calls.
+if ('--poisson-clip' %in% args) {
+  sites_we <- basemap$sites_xy$site
+  pois <- do.call(rbind, lapply(sites_we, function(s) {
+    sm   <- smooth_rate(mins_since(calls$time_utc[calls$site == s], t0), 0, win_min)
+    n    <- sum(win_calls$site == s)
+    seed <- pick_poisson_seed(sm, n)
+    tp   <- sim_poisson(sm, seed)
+    cat(sprintf('%s: %d real calls, Poisson seed %d gives %d\n', s, n, seed, length(tp)))
+    data.frame(site = s, t_min = tp)
+  }))
+  ns02 <- if ('NS02' %in% sites_we) list(site = 'NS02', from = 50, to = 100)
+
+  gap  <- 1                                   # silent beat between the passes
+  ft1  <- sweep_times(win_min, clip_secs, fps, gap)
+  ft2  <- sweep_times(win_min, clip_secs, fps, hold_secs)
+  ft   <- rbind(data.frame(now_real = ft1$now, now_pois = -1, hold = FALSE,
+                           title = 'Listen: real calls'),
+                data.frame(now_real = win_min, now_pois = ft2$now, hold = ft2$hold,
+                           title = 'Listen: a Poisson model of the same calls'))
+  clip_caption <- paste('Real calls bunch into bursts of answering.',
+                        'A Poisson model spreads the same calls out.', sep = '\n')
+
+  dir.create(file.path(out_dir, 'audio'), showWarnings = FALSE)
+  tracks <- list(real    = build_audio(win_calls, win_min, clip_secs, clip_secs + gap,
+                                       upcall_wav = wav, pitch = pitch, pan = pan,
+                                       path = file.path(tempdir(), 'real.raw')),
+                 poisson = build_audio(pois, win_min, clip_secs, clip_secs + hold_secs,
+                                       upcall_wav = wav, pitch = pitch, pan = pan,
+                                       path = file.path(tempdir(), 'poisson.raw')))
+  for (nm in names(tracks))
+    cat('Wrote', raw_to_wav(tracks[[nm]], file.path(out_dir, 'audio', paste0(nm, '.wav'))), '\n')
+  both <- file.path(tempdir(), 'real_then_poisson.raw')
+  writeBin(c(readBin(tracks$real, 'raw', file.size(tracks$real)),
+             readBin(tracks$poisson, 'raw', file.size(tracks$poisson))), both)
+
+  draw_cmp <- function(i)
+    draw_compare_frame(ft$now_real[i], ft$now_pois[i], win_calls, pois, sites_we, t0,
+                       win_min, tz = tz, highlight = ns02, title = ft$title[i],
+                       caption = if (ft$hold[i]) clip_caption)
+  ggsave(file.path(out_dir, 'still_poisson_vs_real.png'), draw_cmp(nrow(ft)),
+         width = 12.8, height = 7.2, dpi = 150, bg = 'white')
+  frames <- render_frames(draw_cmp, nrow(ft), outdir = file.path(tempdir(), 'frames_cmp'))
+  video  <- encode_video(frames, both, file.path(out_dir, 'sne_poisson_vs_real.mp4'), fps = fps)
+  cat('Wrote', video, '\n')
+}
+
+
+# ── Poisson comparison: gap-distribution backup slide ──────────────────────
+gaps <- compare_gaps(calls, branching)
+write.csv(gaps$summary, file.path(out_dir, 'gap_summary.csv'), row.names = FALSE)
+print(gaps$summary, digits = 3)
+plot_gap_distribution(gaps, file.path(out_dir, 'gap_distribution'),
+                      sites = basemap$sites_xy$site)
 
 
 # ── Schematic ──────────────────────────────────────────────────────────────

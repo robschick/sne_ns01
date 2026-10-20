@@ -9,6 +9,7 @@ library(sf)
 col_call   <- '#d95f02'   # orange: call ticks and rings
 col_hawkes <- '#1b7837'   # green: lambda
 col_bg     <- 'grey55'    # grey: background (contact-call) rate
+col_pois   <- '#2166ac'   # blue, dashed: Poisson stand-in (schematic's contact colour)
 
 # Commercial lease outline, dissolved as in 09b_caseStudyMap.R
 read_lease_outline <- function(path = 'data/ne_wea.shp') {
@@ -50,6 +51,7 @@ make_basemap <- function(sites, coast = NULL, lease_areas = NULL, buffer_km = 25
 
 # `now` and `calls$t_min` are minutes since t0. `ymax` is shared across frames;
 # lambda above it is clipped. `caption` (e.g. the takeaway) is drawn when given.
+# A `poisson` column in `rate` adds the dashed Poisson line.
 draw_frame <- function(now, rate, calls, basemap, t0, win_min, ymax,
                        tz = 'America/New_York', caption = NULL, ring_min = 1.5) {
   sxy  <- basemap$sites_xy
@@ -78,8 +80,15 @@ draw_frame <- function(now, rate, calls, basemap, t0, win_min, ymax,
           plot.title = element_text(face = 'bold', size = 22)) +
     labs(title = format(t0 + now * 60, '%d %b %Y  %H:%M %Z', tz = tz))
 
+  has_pois <- !is.null(r$poisson)
+  subtitle <- c('Grey: calls that start a conversation.',
+                'Green: plus calls answering one heard minutes earlier.',
+                if (has_pois) 'Dashed: a Poisson model, one smooth rate with no answering.')
+
   ts_p <- ggplot(r, aes(t_min)) +
     geom_line(aes(y = pmin(mu, ymax)), colour = col_bg, linewidth = 1) +
+    (if (has_pois) geom_line(aes(y = pmin(poisson, ymax)), colour = col_pois,
+                             linewidth = 1, linetype = 'dashed')) +
     geom_line(aes(y = pmin(lambda, ymax)), colour = col_hawkes, linewidth = 1.1) +
     geom_segment(data = cs, aes(x = t_min, xend = t_min, y = 0, yend = ymax * 0.25),
                  colour = col_call, linewidth = 0.55) +
@@ -89,11 +98,64 @@ draw_frame <- function(now, rate, calls, basemap, t0, win_min, ymax,
     theme_minimal(base_size = 17) +
     theme(strip.text.y.left = element_text(angle = 0, face = 'bold', size = 18),
           strip.placement = 'outside', panel.grid.minor = element_blank()) +
-    labs(subtitle = paste('Grey: expected calling if calls were independent.',
-                          'Green: each call raises the chance of another, then it fades.',
-                          sep = '\n'))
+    labs(subtitle = paste(subtitle, collapse = '\n'))
 
   p <- map + ts_p + plot_layout(widths = c(1, 1.5))
+  if (is.null(caption)) return(p)
+  cap <- grid::textGrob(caption, gp = grid::gpar(fontsize = 19, fontface = 'bold'))
+  wrap_elements(p) / wrap_elements(full = cap) + plot_layout(heights = c(1, 0.13))
+}
+
+# Companion clip: per site, a row of real call ticks over a row of Poisson
+# call ticks, with running counts. Real ticks show up to `now_real`, Poisson
+# up to `now_pois` (minutes since t0; < 0 hides a row's ticks). `real` and
+# `pois` have site and t_min. `highlight` (site, from, to) shades one span.
+draw_compare_frame <- function(now_real, now_pois, real, pois, sites, t0, win_min,
+                               tz = 'America/New_York', highlight = NULL,
+                               title = NULL, caption = NULL) {
+  rows  <- c('Real calls', 'Poisson calls')
+  ticks <- rbind(
+    data.frame(site = real$site, t_min = real$t_min, row = rows[1])[real$t_min <= now_real, ],
+    data.frame(site = pois$site, t_min = pois$t_min, row = rows[2])[pois$t_min <= now_pois, ])
+  ticks$y <- match(ticks$row, rev(rows))
+  ticks$site <- factor(ticks$site, sites)
+
+  n_shown <- expand.grid(site = factor(sites, sites), row = rows, stringsAsFactors = FALSE)
+  n_shown$y <- match(n_shown$row, rev(rows))
+  n_shown$n <- mapply(function(s, rw) sum(ticks$site == s & ticks$row == rw),
+                      n_shown$site, n_shown$row)
+  n_shown$label <- sprintf('%s  %d', n_shown$row, n_shown$n)
+
+  cursor <- data.frame(now = c(now_real, now_pois)[c(now_real, now_pois) >= 0 &
+                                                    c(now_real, now_pois) < win_min])
+  hl <- if (!is.null(highlight)) data.frame(site = factor(highlight$site, sites),
+                                            from = highlight$from, to = highlight$to)
+
+  p <- ggplot(ticks) +
+    (if (!is.null(hl)) list(
+      geom_rect(data = hl, aes(xmin = from, xmax = to, ymin = 0.45, ymax = 2.55),
+                fill = 'gold', alpha = 0.25, inherit.aes = FALSE),
+      geom_text(data = hl, aes(x = (from + to) / 2, y = 2.75, label = 'burst'),
+                size = 5, fontface = 'bold', colour = 'goldenrod4', inherit.aes = FALSE))) +
+    geom_segment(aes(x = t_min, xend = t_min, y = y - 0.38, yend = y + 0.38, colour = row),
+                 linewidth = 0.6) +
+    geom_vline(data = cursor, aes(xintercept = now), colour = 'grey30', linewidth = 0.6) +
+    geom_text(data = n_shown, aes(x = win_min + 2, y = y, label = label, colour = row),
+              hjust = 0, size = 5.5, fontface = 'bold') +
+    facet_grid(site ~ ., switch = 'y', drop = FALSE) +
+    scale_colour_manual(values = setNames(c(col_call, col_pois), rows), guide = 'none') +
+    scale_x_continuous(limits = c(0, win_min * 1.3), breaks = seq(0, win_min, 30),
+                       expand = c(0, 0), name = 'minutes') +
+    scale_y_continuous(limits = c(0.4, 2.9), breaks = NULL, name = NULL) +
+    theme_minimal(base_size = 17) +
+    theme(strip.text.y.left = element_text(angle = 0, face = 'bold', size = 18),
+          strip.placement = 'outside', panel.grid.minor = element_blank(),
+          panel.spacing.y = unit(1, 'lines'),
+          plot.title = element_text(face = 'bold', size = 22)) +
+    labs(title = title,
+         subtitle = paste0(format(t0, '%d %b %Y  %H:%M', tz = tz), ' to ',
+                           format(t0 + win_min * 60, '%H:%M %Z', tz = tz),
+                           '. About the same number of calls in each row; only the timing differs.'))
   if (is.null(caption)) return(p)
   cap <- grid::textGrob(caption, gp = grid::gpar(fontsize = 19, fontface = 'bold'))
   wrap_elements(p) / wrap_elements(full = cap) + plot_layout(heights = c(1, 0.13))

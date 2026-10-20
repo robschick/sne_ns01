@@ -36,6 +36,8 @@ check_inputs <- function(sites, calls, effort, fits, background) {
 # The compensator over the window should be near the observed count (it is the
 # expected count given the history); a large mismatch usually means a per-min
 # vs per-h slip or the wrong kernel type. Also checks the jump at each call.
+# With a `poisson` column, also reports that line's integral (poisson_ratio),
+# which should be near 1 by construction since it smooths the observed counts.
 check_rate <- function(rate, calls, fits, t0, win_min, dt = 0.1, tol = 3) {
   out <- do.call(rbind, lapply(unique(rate$site), function(s) {
     r  <- rate[rate$site == s & rate$t_min >= 0 & rate$t_min <= win_min, ]
@@ -54,9 +56,11 @@ check_rate <- function(rate, calls, fits, t0, win_min, dt = 0.1, tol = 3) {
     jump_ok <- all(abs(jumps / a - round(jumps / a)) < 1e-3 & round(jumps / a) >= 1)
 
     data.frame(site = s, n_obs = n_obs, expected = sum(r$lambda / 60) * dt,
+               expected_poisson = if (is.null(r$poisson)) NA else sum(r$poisson / 60) * dt,
                jump_ok = jump_ok)
   }))
   out$ratio <- out$expected / pmax(out$n_obs, 1)
+  out$poisson_ratio <- out$expected_poisson / pmax(out$n_obs, 1)
   bad <- out$n_obs > 0 & (out$ratio > tol | out$ratio < 1 / tol)
   if (any(bad)) warning('Expected vs observed count off by > ', tol, 'x at: ',
                         paste(out$site[bad], collapse = ', '))
