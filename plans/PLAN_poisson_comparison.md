@@ -145,3 +145,140 @@ The Poisson var/mean is above 1 only because the smoothed rate varies.
   smoothed over about an hour. A fitted version is in the paper.
 - The Poisson line can't follow minute-scale clustering. Real data have ~1.5×
   more short gaps than Poisson allows, at every site.
+
+## Intro blurbs for `sne_hawkes.mp4` (pick one per audience)
+
+The main talk uses `sne_hawkes.mp4`. The companion clip and the gap slide are
+held in reserve: the gap slide answers quantitative questions, and the clip
+answers "why not just use a Poisson model?". Each blurb is said aloud while the
+clip plays (about 25 s plus the lead-in).
+
+### Quantitative ecologist
+
+"These are two hours of verified right whale upcalls from three recorders
+south of Martha's Vineyard and Nantucket, on 10 January 2022. Each orange tick
+is one call, and you'll hear each one as it lands.
+
+We model each site as a self-exciting point process, a Hawkes process. The
+grey line is the background rate: a smooth log-Gaussian Cox process that tracks
+time of day, season and conditions. The green line adds the excitation term.
+Every call bumps the rate up, and the bump decays with a half-life of 1.4 to 2
+minutes. On average each call triggers about 0.6 responses, at all three
+sites.
+
+The dashed line is what a Poisson model has to do: put every call into one
+smooth rate. It's too high in the quiet stretches and far too low inside the
+NS02 burst. Across the whole season, real gaps under a minute are about 1.5
+times as common as a Poisson model allows. That clustering isn't noise to
+average away. It's structure, and if you leave it out, your estimates of the
+rate and its uncertainty are wrong."
+
+### Field biologist
+
+"This is two hours of right whale upcalls on a January afternoon, recorded at
+three sites south of the islands. Each orange tick is one call, and you'll hear
+them as they happen.
+
+Listen to how they arrive. They aren't spread evenly. They come in runs: one
+call, then another within a minute or two, then another. That's what
+countercalling looks like in the acoustic record, with whales answering a call
+they've just heard.
+
+The grey line is the rate of calls that start an exchange. The green line adds
+the answers. Each call raises the chance of another, and that effect fades
+within a couple of minutes. Watch NS02 near the end. The green line climbs to
+about 300 calls an hour while grey sits near 95. Most of that burst is
+answering. But grey rises too, so it isn't just a few animals talking.
+
+What the model gives us is a way to separate two things the raw counts blur
+together: how often whales start calling, and how much they respond to each
+other."
+
+### Resource manager
+
+"Passive acoustic monitoring is one of our main tools for tracking right
+whales in and around the wind lease areas, outlined here. Detections often
+feed into decisions like vessel slowdowns or construction mitigation. This
+clip shows why a raw count of calls can mislead.
+
+Each orange tick is a detected upcall, and you'll hear them. They come in
+bursts, because whales answer each other. At NS02 near the end, the call rate
+jumps to about 300 an hour. But most of those calls are responses to calls made
+a minute or two earlier, not new animals arriving.
+
+The grey line is the rate of calls that start an exchange. The green line adds
+the answers. The dashed line is what you'd assume if every call were
+independent, and it misses the bursts entirely.
+
+Neither line is a whale count. The point is that treating calls as independent
+mixes up how many whales are calling with how much they're talking to each
+other. A spike in detections isn't automatically a spike in animals, and a
+model that separates the two gives a steadier, more defensible signal to
+manage against."
+
+Follow-up to expect after the manager version: "Then how many whales were
+there?" Answer with NS02: the background rose too (~17 to 95/h), so more
+calling did start. The model just stops you reading the whole burst as new
+animals.
+
+## Q&A: "You can't see whales. How do you know it's countercalling?"
+
+**Short answer.** "You're right, and it's a fair challenge. The hydrophone
+gives us call times, nothing more. We don't know who called or who answered.
+What the model finds is a statistical fact: a call makes another call more
+likely within about two minutes, more than any slowly changing rate can
+explain. 'Contact call' and 'countercall' are our biological reading of that
+pattern. They aren't something we observed directly. The main message, that
+calls aren't independent and counts overstate independent calling, holds
+whatever the mechanism."
+
+**What the model actually separates.** Two time scales, not two behaviours:
+
+- background: variation slower than the GP scale (rho 60 min, effective range
+  ~180 min);
+- excitation: extra calling in the minutes after each call (half-life 1.4–2.0
+  min).
+
+"Countercall" means "a call the model attributes to the short-lag, triggered
+component." It does not mean a confirmed exchange between two animals.
+
+**Other mechanisms that leave the same signature.** Name them before the
+questioner does:
+
+1. **One whale calling in bouts.** A single animal repeating itself also
+   produces self-excitation. A single hydrophone can't tell repetition from
+   reply. For the counting message this makes no difference: either way, a
+   burst isn't many animals.
+2. **Fast changes the background can't follow.** A whale or group passing
+   close to the recorder, or a short window of good listening conditions, adds
+   short-scale clustering. With a 60-min GP, anything faster than about an hour
+   is absorbed by the excitation term. Clustering from a varying rate versus
+   contagion from past events is a known identifiability problem for point
+   processes. Event times alone can't fully settle it.
+3. **The detection process.** Calls masked by noise pile up in quiet windows,
+   and analysts reviewing around a found call may catch more nearby. Both
+   cluster detections without the whales doing anything.
+
+**Why we still read it as answering.**
+
+- The lag is minutes, matching the call-and-response timing that tag and
+  focal-follow studies describe. (Check the source and the exact latency
+  before quoting a number.)
+- Three sites ~40 km apart, with very different call volumes (6k to 34k calls),
+  give nearly the same structure: ~0.6 responses per call, half-life 1.4–2.0
+  min. Noise or passing-animal artefacts would be expected to vary much more
+  by site.
+- A smoothly varying rate can't reproduce the gap distribution (55–61% of real
+  gaps < 1 min vs 36–42% Poisson; reserve gap slide).
+
+**What would settle it.** Name it as future work, not a weakness to hide:
+
+- localisation within a site (a multi-element array or bearings), to see
+  whether a triggered call comes from a different position than its parent;
+- acoustic tags, to attribute calls to known animals;
+- adding received level or SNR as a mark, to check whether parent and child
+  calls look like different callers.
+
+**Wording to adjust if pressed.** The blurbs say "whales answering". In Q&A,
+step back to "calls triggered by a recent call, which we interpret as
+answering".
