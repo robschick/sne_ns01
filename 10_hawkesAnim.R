@@ -10,11 +10,16 @@
 #   Rscript 10_hawkesAnim.R --video         # ... plus the full mp4
 #   Rscript 10_hawkesAnim.R --window=2      # use the 2nd-ranked window
 #   Rscript 10_hawkesAnim.R --t0="2022-01-15 18:00"   # explicit start (UTC)
-#   Rscript 10_hawkesAnim.R --wav=path.wav  # real upcall for the audio
+#   Rscript 10_hawkesAnim.R --wav=path.wav  # a different upcall clip
+#   Rscript 10_hawkesAnim.R --wav=none      # synthetic sweep instead of a clip
+#   Rscript 10_hawkesAnim.R --pitch=1.5     # extra pitch shift on the clip
+#   Rscript 10_hawkesAnim.R --mono          # no left/right panning by site
+#   Rscript 10_hawkesAnim.R --audio-preview # soundtrack variants as .wav only
 #   FFMPEG=/path/to/ffmpeg Rscript 10_hawkesAnim.R --video   # non-PATH ffmpeg
 #
 # Output (fig/talk/): sne_hawkes.mp4, hawkes_schematic.pdf/.png,
-#   still_{start,busiest,end}.png, windows.csv, site_summary.csv, rate_check.csv
+#   still_{start,busiest,end}.png, windows.csv, site_summary.csv, rate_check.csv,
+#   audio/*.wav (--audio-preview). Video is 1920 x 1080, 30 fps.
 # =============================================================================
 
 rm(list = ls())
@@ -27,11 +32,12 @@ clock_offset_h <- 0
 tz        <- 'America/New_York'
 win_min   <- 120
 secs      <- 22
-fps       <- 15
+fps       <- 30
 hold_secs <- 3
 out_dir   <- 'fig/talk'
-takeaway  <- paste('Calls aren\'t independent: counting them as if they were mixes up',
-                   'how many whales are calling\nwith how much they\'re answering each other.')
+takeaway  <- paste('Calls aren\'t independent. Counting them as if they were mixes up',
+                   'how many whales are calling with how much they\'re answering each other.',
+                   sep = '\n')
 
 args <- commandArgs(trailingOnly = TRUE)
 arg  <- function(name) {
@@ -39,7 +45,11 @@ arg  <- function(name) {
   if (length(hit)) sub(paste0('^--', name, '='), '', hit[1]) else NULL
 }
 do_video <- '--video' %in% args
-wav      <- arg('wav')
+# Default clip is already pitched up 2x (~200 -> 360 Hz), so it plays at pitch 1.
+# data/ is gitignored, so fall back to the synthetic sweep where it's absent.
+wav      <- if (is.null(arg('wav'))) 'data/call_clips/upcall_clean_x2.wav' else arg('wav')
+if (identical(wav, 'none') || (is.null(arg('wav')) && !file.exists(wav))) wav <- NULL
+pitch    <- if (!is.null(arg('pitch'))) as.numeric(arg('pitch')) else if (is.null(wav)) 3 else 1
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 
@@ -110,14 +120,38 @@ for (nm in names(stills)) {
   ggsave(file.path(out_dir, paste0('still_', nm, '.png')),
          draw_frame(stills[[nm]], rate, win_calls, basemap, t0, win_min, ymax, tz = tz,
                     caption = if (nm == 'end') takeaway),
-         width = 12, height = 6.2, dpi = 100, bg = 'white')
+         width = 12.8, height = 7.2, dpi = 150, bg = 'white')
 }
 
 
-# ── Video ──────────────────────────────────────────────────────────────────
+# ── Audio + video ──────────────────────────────────────────────────────────
+# Each site is panned to match its place on the map (west = left), so bursts at
+# different sites are heard apart.
+xs  <- basemap$sites_xy$x
+pan <- if ('--mono' %in% args || length(xs) < 2) NULL else
+  setNames(0.8 * (2 * (xs - min(xs)) / diff(range(xs)) - 1), basemap$sites_xy$site)
+
+if ('--audio-preview' %in% args) {
+  dir.create(file.path(out_dir, 'audio'), showWarnings = FALSE)
+  variants <- list(
+    clip_pan    = list(wav = wav, pitch = pitch, pan = pan, vary = 0.05),
+    clip_mono   = list(wav = wav, pitch = pitch, pan = NULL, vary = 0.05),
+    clip_exact  = list(wav = wav, pitch = pitch, pan = pan, vary = 0),
+    clip_higher = list(wav = wav, pitch = 1.5 * pitch, pan = pan, vary = 0.05),
+    synthetic   = list(wav = NULL, pitch = 3, pan = pan, vary = 0))
+  for (nm in names(variants)) {
+    v <- variants[[nm]]
+    raw <- build_audio(win_calls, win_min, secs, total_secs = secs + hold_secs,
+                       upcall_wav = v$wav, pitch = v$pitch, pan = v$pan, vary = v$vary,
+                       path = file.path(tempdir(), paste0(nm, '.raw')))
+    cat('Wrote', raw_to_wav(raw, file.path(out_dir, 'audio', paste0(nm, '.wav'))), '\n')
+  }
+}
+
 if (do_video) {
   audio  <- build_audio(win_calls, win_min, secs, total_secs = secs + hold_secs,
-                        upcall_wav = wav, path = file.path(tempdir(), 'upcalls.raw'))
+                        upcall_wav = wav, pitch = pitch, pan = pan,
+                        path = file.path(tempdir(), 'upcalls.raw'))
   frames <- render_frames(rate, win_calls, basemap, t0, win_min, ymax, secs = secs,
                           fps = fps, hold_secs = hold_secs, caption = takeaway,
                           outdir = file.path(tempdir(), 'frames'), tz = tz)

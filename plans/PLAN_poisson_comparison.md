@@ -1,0 +1,118 @@
+# Plan: Poisson-vs-Hawkes comparison for the NARWC 2026 talk
+
+Goal: justify the Hawkes model to a non-statistical audience by showing what a
+Poisson (no-answering) model would look like on the same calls. This builds on
+the talk animation in `plans/PLAN_sne_hawkes_animation.md` (PR #12).
+
+Build three things:
+
+1. **Poisson line in the animation:** a dashed third line in each site's panel.
+2. **Real vs Poisson calls, seen and heard:** a short companion clip.
+3. **Gap-distribution backup slide:** real vs Poisson time between calls.
+
+A formal fitted comparison (option 4: an LGCP fit with no self-excitation,
+then DIC and time-rescaling Q-Q plots) is deferred to the paper. It is a full
+cluster run.
+
+---
+
+## Current state (2026-10-20)
+
+- The pipeline works for all three sites. `out/anim/{cox01,ns01,ns02}_anim.rds`
+  are on the laptop, exported on the cluster and rsynced back.
+- Run with:
+  `FFMPEG=~/opt/miniconda3/bin/ffmpeg Rscript 10_hawkesAnim.R --window=2 --video`.
+  Homebrew ffmpeg is broken (dylib mismatch after `brew upgrade` of its deps),
+  so use the miniconda binary until it's fixed.
+- Chosen window: `--window=2`, which is 2022-01-10 19:11 UTC (14:11 EST). All
+  three sites are active: COX01 56, NS01 66, NS02 215 calls. Rank 1 has COX01
+  silent.
+- Timestamps are true UTC (`clock_offset_h = 0`).
+- PR #12 (pipeline) is merged. PR #13 (branch `feat/talk-animation-av`) adds
+  the real-clip stereo audio, 1080p/30 fps render, projector-sized text, the
+  `--wav/--pitch/--mono/--audio-preview` flags and this plan. Before pushing
+  more work, check whether #13 is still open (`gh pr view 13 --json state`);
+  if it has merged, branch fresh off master.
+- Open small item: change the panel subtitle to "Grey: calls that start a
+  conversation. Green: plus calls answering one heard minutes earlier."
+  Reason: "expected if independent" wrongly implies grey is a Poisson fit.
+
+## Why the grey line is not the Poisson line
+
+Grey is the Hawkes background `mu(t)`, which accounts for only ~40% of calls
+(the excitation is 59–64% of lambda in window 2). A Poisson model must put
+all calls into a smooth rate. So its line runs higher than grey overall: too
+high in quiet gaps and far too low inside bursts. That mismatch is the visual.
+
+## Evidence already computed
+
+Whole 5-month fit window. The Poisson comparison simulates calls from the
+observed per-minute counts smoothed with a Gaussian kernel, sd = 60 min (about
+the GP scale; rho = 60 min, effective range 180 min). Seed 1.
+
+| site | calls | gaps < 1 min real / Poisson | gaps < 2 min real / Poisson | var/mean 5-min counts real / Poisson |
+|---|---|---|---|---|
+| COX01 | 6098 | 0.55 / 0.37 | 0.73 / 0.53 | 5.7 / 3.7 |
+| NS01 | 13017 | 0.58 / 0.41 | 0.76 / 0.61 | 6.1 / 3.9 |
+| NS02 | 33611 | 0.61 / 0.41 | 0.77 / 0.61 | 5.6 / 3.1 |
+
+The Poisson var/mean is above 1 only because the smoothed rate varies.
+
+## Specs
+
+### 1. `poisson_rate()` and the dashed line
+
+- New function in `src/anim_rate.R`:
+  `poisson_rate(calls, t0, win_min, burn_min, dt, sd_min = 60)`. It gives the
+  per-site smooth rate (calls/h) on the same grid as `rate_grid()`: per-minute
+  counts convolved with a Gaussian kernel (sd 60 min, ±4 sd), evaluated
+  outside the displayed window too, so the edges aren't biased low. Add it to
+  `rate` as a `poisson` column.
+- This is a **stand-in, not a fitted model**. Say so in a code comment and in
+  the speaker notes. Option 4 would replace it with a fitted LGCP background.
+- `draw_frame()`: add a dashed line (colour suggestion `#2166ac` blue, matching
+  the schematic's contact colour, or a neutral dark grey), linewidth ~1.
+- Update the subtitle to three lines: grey = start a conversation, green =
+  plus answering, dashed = "a Poisson model: one smooth rate, no answering".
+  Keep it legible at 1080p (base_size 17).
+- `check_rate()`: also report the Poisson line's integral vs the observed
+  count. It should be near 1 by construction; that's a useful sanity check.
+
+### 2. Real vs Poisson companion clip (`sne_poisson_vs_real.mp4`)
+
+- Simulate one Poisson call set for window 2 from the `poisson` rate (thinning
+  or per-bin Poisson with uniform times; fixed seed; pick a seed whose total
+  count is close to the observed count, so only the *arrangement* differs).
+- Layout: per site, two tick rows ("Real calls" / "Poisson calls"), plus
+  optional running cumulative counts. Show the NS02 burst minutes 50–100
+  prominently. Keep it ~10–15 s.
+- Audio: the same `build_audio()` settings. Either play the real track then
+  the Poisson track, or two separate clips. Write both as `.wav` too
+  (`fig/talk/audio/real.wav`, `poisson.wav`) for auditioning.
+- Wire it in through a driver flag (`--poisson-clip`) and reuse
+  `render_frames()`/`encode_video()` (they may need a `draw` function
+  argument).
+
+### 3. Gap-distribution backup slide (`gap_distribution.pdf/.png`)
+
+- New function in a new `src/anim_gaps.R` (or the schematic file). For each
+  site, over the whole fit window: the distribution of time between
+  consecutive calls, real vs Poisson (simulated as above; several
+  replicates, with the Poisson shown as a band).
+- Suggested form: a histogram or density of gaps on 0–10 min with the
+  Poisson overlay, facets by site, annotated with the "% of gaps < 1 min"
+  numbers from the table. Keep it to one slide at 16:9 and readable at
+  projector size.
+- Write the numbers table to `fig/talk/gap_summary.csv`.
+
+## Speaker-note points (agreed)
+
+- Ticks are calls; grey changes slowly (time of day, season, conditions);
+  green jumps at every call and fades within ~2 min.
+- Half-life 1.4–2.0 min; ~0.6 responses per call at all three sites.
+- NS02 burst: green peaks ~310/h vs grey ~95/h. Most of the burst is
+  answering, but grey also rises (17→95/h), so don't claim "only a few whales".
+- Neither line counts whales; green is a rate given past calls, not a
+  forecast.
+- The Poisson line can't follow minute-scale clustering. Real data have ~1.5×
+  more short gaps than Poisson allows, at every site.
