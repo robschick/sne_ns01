@@ -28,17 +28,11 @@ cluster run.
   three sites are active: COX01 56, NS01 66, NS02 215 calls. Rank 1 has COX01
   silent.
 - Timestamps are true UTC (`clock_offset_h = 0`).
-- **Uncommitted on top of PR #12:**
-  - `src/anim_audio.R`: real clip, stereo panning by site, ±5% pitch
-    variation, tanh limiter, `raw_to_wav()`.
-  - `src/anim_render.R`: 1920×1080, 30 fps, CRF 18, faststart, stereo.
-  - `src/anim_draw.R`: projector-sized text and lines, legend title on top,
-    labels nudged up.
-  - `10_hawkesAnim.R`: `--wav/--pitch/--mono/--audio-preview` flags; default
-    clip `data/call_clips/upcall_clean_x2.wav` (already pitched up 2×,
-    ~200→360 Hz, so it plays at pitch 1); rebalanced takeaway text.
-- Before committing, check that PR #12 is still open (`gh pr view 12 --json
-  state`). If it has merged, branch fresh off master.
+- PR #12 (pipeline) is merged. PR #13 (branch `feat/talk-animation-av`) adds
+  the real-clip stereo audio, 1080p/30 fps render, projector-sized text, the
+  `--wav/--pitch/--mono/--audio-preview` flags and this plan. Before pushing
+  more work, check whether #13 is still open (`gh pr view 13 --json state`);
+  if it has merged, branch fresh off master.
 - Open small item: change the panel subtitle to "Grey: calls that start a
   conversation. Green: plus calls answering one heard minutes earlier."
   Reason: "expected if independent" wrongly implies grey is a Poisson fit.
