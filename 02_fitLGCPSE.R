@@ -112,12 +112,25 @@ COVdelta = COVeta = 1
 lb_eta = lb_eta_days
 ub_eta = 3 / min(diff(ts))
 
-niters = niters_lgcp
+# FIT_NITERS overrides the chain length for one run (e.g. extending one buoy
+# with FIT_RESUME) without changing niters_lgcp for every buoy.
+niters = as.integer(Sys.getenv('FIT_NITERS', unset = niters_lgcp))
 updateCOV = TRUE
 outers = c(0, seq(1000, niters, by = 1000))
 
 start = 1; postSamples = postBranching = postWm = c(); Accprob = 0; rtime = 0
-# load(filename); start = which(outers == nrow(postSamples))
+
+# Resume: FIT_RESUME=true reloads the saved chain from `filename` with its
+# end-state (beta, Wm, adapted COV*, sigma2, ...) and appends to it, so the
+# chain continues rather than restarting. Set FIT_NITERS to the new total:
+#   sbatch --export=ALL,BUOY=ns01,FIT_RESUME=true,FIT_NITERS=150000 aci_fit.sh
+# Back up the fit first; it is overwritten every 1,000 iterations.
+if (tolower(Sys.getenv('FIT_RESUME', unset = '')) %in% c('1', 'true', 'yes')) {
+  load(filename); start = which(outers == nrow(postSamples))
+  if (length(start) != 1 || nrow(postSamples) >= niters)
+    stop('Resume: saved chain has ', nrow(postSamples), ' iterations; FIT_NITERS = ', niters)
+  cat(sprintf('=== resuming %s: %d -> %d iterations ===\n', filename, nrow(postSamples), niters))
+}
 
 # i = 2; outers = seq(0, 2000, by = 100); adaptInterval = 50
 
