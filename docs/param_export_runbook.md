@@ -51,7 +51,7 @@ Each takes well under an hour; most of the time is loading the fit.
 ## 3. Cluster: check the logs
 
 ```bash
-tail -15 out/param_export_*_param_export.log
+tail -n 15 out/param_export_*_param_export.log
 ```
 
 For each buoy, check that:
