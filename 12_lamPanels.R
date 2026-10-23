@@ -16,26 +16,7 @@
 # Output:  fig/talk/lam_panels.png, fig/talk/lam_panels.pdf
 # =============================================================================
 
-library(ggplot2)
-
-buoys  <- c('cox01', 'ns01', 'ns02')     # west -> east, as in the paper
-labels <- c(cox01 = 'COX01', ns01 = 'NS01', ns02 = 'NS02')
-
-# Excitation on a sorted grid from sorted call times, by running decay:
-# O(grid + calls) instead of the grid x calls outer product.
-excite_grid <- function(tg, tc, a, eta) {
-  out <- numeric(length(tg))
-  s <- 0; last <- tg[1]; j <- 1; n <- length(tc)
-  for (k in seq_along(tg)) {
-    while (j <= n && tc[j] < tg[k]) {          # add calls strictly before tg[k]
-      s <- s * exp(-eta * (tc[j] - last)) + a
-      last <- tc[j]; j <- j + 1
-    }
-    s <- s * exp(-eta * (tg[k] - last)); last <- tg[k]
-    out[k] <- s
-  }
-  out
-}
+source('src/talk_figs.R')   # buoys, labels, excite_grid()
 
 rates <- list(); calls <- list()
 for (b in buoys) {
