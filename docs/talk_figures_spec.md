@@ -121,7 +121,7 @@ sbatch --mem=64G --export=ALL,BUOY=ns01,PARAM_FIT_FILE=/hpc/group/schicklab/sne_
 sbatch --mem=96G --export=ALL,BUOY=ns02,PARAM_FIT_FILE=/hpc/group/schicklab/sne_ns01/fit/ns02/ns02LGCPSE.100k.RData aci_param_export.sh
 
 # Each log ends with the season totals, the num/ cross-check and "Wrote ..."
-tail -15 out/param_export_*_param_export.log
+tail -n 15 out/param_export_*_param_export.log
 ```
 
 Check in each log: `chain 100000 iterations, 2000 draws`, and the background
