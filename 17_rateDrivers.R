@@ -5,8 +5,8 @@
 # piece multiplies the rate. Per day, each piece is shown as
 # exp(daily mean of its log contribution - its season mean): 2 = doubled the
 # rate that day, 0.5 = halved it. Answering is the daily ratio of total to
-# background expected calls, (mu + excitation) / mu, left uncentred so 1x means
-# no answers that day (centring would put call-free days below 1x).
+# background expected calls, (mu + excitation) / mu, left uncentered so 1x means
+# no answers that day (centering would put call-free days below 1x).
 #
 # Pieces are posterior medians per knot (10b_paramExport.R); answering uses
 # the plug-in alpha, eta medians from the animation export, as in 12_lamPanels.R.
