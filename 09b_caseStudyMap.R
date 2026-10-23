@@ -10,6 +10,7 @@
 #
 # Usage:   Rscript 09b_caseStudyMap.R
 # Output:  fig/case_study_map.pdf, fig/case_study_map.png
+#          fig/talk/sne_map_slide.pdf/.png — panel (b) alone, sized for slides
 # =============================================================================
 
 rm(list = ls())
@@ -111,8 +112,11 @@ array_lab <- st_sf(
 )
 
 # ── Panel builder ───────────────────────────────────────────────────────────
-# `under` takes optional layers drawn between the tiles and the points.
-make_panel <- function(pts, ext, title, under = NULL) {
+# `under` takes optional layers drawn between the tiles and the points. The
+# size arguments default to the manuscript figure; the slide version passes
+# larger ones.
+make_panel <- function(pts, ext, title, under = NULL, pt_size = 2.5, base_size = 11,
+                       arrow_cm = 1.0, scale_cex = 1, legend_nrow = 1) {
   lims <- ext %>% st_as_sfc() %>% st_transform(3857) %>% st_bbox()
   ggplot() +
     annotation_map_tile(type = esri_ocean, zoomin = 1, progress = 'none') +
@@ -120,9 +124,9 @@ make_panel <- function(pts, ext, title, under = NULL) {
     layer_spatial(
       pts,
       aes(fill = case_study, shape = case_study),
-      size = 2.5,
+      size = pt_size,
       colour = 'black',
-      stroke = 0.6,
+      stroke = 0.6 * pt_size / 2.5,
       show.legend = c(fill = TRUE, shape = TRUE, colour = FALSE)
     ) +
     # Each panel holds only some case studies; show.legend + override.aes keep
@@ -132,18 +136,20 @@ make_panel <- function(pts, ext, title, under = NULL) {
       limits = cs_levels,
       name = NULL,
       guide = guide_legend(
-        nrow = 1,
+        nrow = legend_nrow,
         override.aes = list(fill = unname(cs_fill), shape = unname(cs_shape))
       )
     ) +
     scale_shape_manual(values = cs_shape, limits = cs_levels, guide = 'none') +
-    annotation_scale(location = 'br', width_hint = 0.25) +
+    annotation_scale(location = 'br', width_hint = 0.25, text_cex = 0.7 * scale_cex,
+                     height = unit(0.25 * scale_cex, 'cm')) +
     annotation_north_arrow(
       location = 'tl',
       which_north = 'true',
-      style = north_arrow_fancy_orienteering(),
-      height = unit(1.0, 'cm'),
-      width = unit(1.0, 'cm')
+      style = north_arrow_fancy_orienteering(text_size = 10 * arrow_cm),
+      pad_y = unit(0.6 * arrow_cm - 0.35, 'cm'),   # 0.25 cm (default) at 1 cm; room for the 'N'
+      height = unit(arrow_cm, 'cm'),
+      width = unit(arrow_cm, 'cm')
     ) +
     coord_sf(
       crs = 3857,
@@ -152,8 +158,8 @@ make_panel <- function(pts, ext, title, under = NULL) {
       expand = FALSE
     ) +
     labs(x = NULL, y = NULL, title = title) +
-    theme_bw() +
-    theme(plot.title = element_text(size = 11, face = 'bold'))
+    theme_bw(base_size = base_size) +
+    theme(plot.title = element_text(size = base_size, face = 'bold'))
 }
 
 plot.ccb <- make_panel(ccb_pts, ccb_ext, '(a) Cape Cod Bay') +
@@ -255,3 +261,73 @@ ggsave('fig/case_study_map.pdf', plot.full, width = 10, height = 4.6,
        bg = 'white')
 ggsave('fig/case_study_map.png', plot.full, width = 10, height = 4.6,
        dpi = 330, bg = 'white')
+
+# ── Slide version: panel (b) alone, large type ──────────────────────────────
+# Same extent, lease outline and inset as the manuscript panel; the legend keys
+# are renamed for a talk audience (no case-study numbering).
+slide_size <- 8     # label size (mm) for the buoy names
+
+# Heavier lease outline so it reads on a projector
+wea_layers_slide <- wea_layers
+wea_layers_slide[[1]] <- geom_sf(
+  data = wea,
+  aes(colour = 'Wind energy lease areas'),
+  fill = NA,
+  linewidth = 1.3
+)
+
+# Inset with only the SNE box, unlettered (there is no panel (a) on the slide)
+plot.inset_slide <- ggplot() +
+  geom_sf(data = coast, fill = 'grey85', colour = 'grey55', linewidth = 0.2) +
+  geom_sf(data = boxes[boxes$panel == 'b', ], fill = NA, colour = 'firebrick',
+          linewidth = 0.9) +
+  coord_sf(xlim = c(-76.5, -66.5), ylim = c(38.5, 45.5), expand = FALSE) +
+  theme_void() +
+  theme(
+    panel.background = element_rect(fill = '#cfe1ee', colour = NA),
+    panel.border = element_rect(fill = NA, colour = 'grey30', linewidth = 0.8)
+  )
+
+plot.sne_slide <- make_panel(
+  sne_pts,
+  sne_ext,
+  NULL,
+  under = wea_layers_slide,
+  pt_size = 6,
+  base_size = 22,
+  arrow_cm = 2.0,
+  scale_cex = 2.5
+) +
+  geom_sf_text(
+    data = sne_pts,
+    aes(label = label),
+    nudge_y = 8000,
+    size = slide_size,
+    fontface = 'bold'
+  ) +
+  scale_fill_manual(
+    values = cs_fill['Case Study 2'],
+    labels = 'Acoustic recorder',
+    name = NULL,
+    guide = guide_legend(override.aes = list(shape = 21, size = 6), order = 1)
+  ) +
+  theme(
+    legend.position = 'bottom',
+    legend.text = element_text(size = 22),
+    legend.key.width = unit(1.4, 'cm'),
+    axis.text = element_text(size = 16)
+  ) +
+  inset_element(
+    plot.inset_slide,
+    left = 0.015,
+    bottom = 0.02,
+    right = 0.26,
+    top = 0.36,
+    align_to = 'panel'
+  )
+
+dir.create('fig/talk', recursive = TRUE, showWarnings = FALSE)
+ggsave('fig/talk/sne_map_slide.pdf', plot.sne_slide, width = 12, height = 8.6,
+       bg = 'white')
+ggsave('fig/talk/sne_map_slide.png', plot.sne_slide, width = 12, height = 8.6,
+       dpi = 200, bg = 'white')
