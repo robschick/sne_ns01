@@ -4,7 +4,7 @@
 # Share still detected after +5 dB = exp(beta_noise * 5 / dB_per_SD), per
 # posterior draw, where dB_per_SD is the SD of RMS noise (dB re 1 uPa) across
 # the buoy's knots (the model's noise covariate is standardized per buoy).
-# Shown as 10 calls per buoy with the lost share greyed out.
+# Shown as 10 calls per buoy with the lost share grayed out.
 #
 # Usage:   Rscript 14_volumeKnob.R
 # Input:   out/anim/<buoy>_params.rds (10b_paramExport.R), data/<buoy>_rms_data.rds

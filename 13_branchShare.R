@@ -8,7 +8,7 @@
 #                   stacked bar per buoy, with the share printed on each bar
 #
 # The share is taken per posterior draw (counter / (background + counter)) and
-# then summarised: background and counter are strongly negatively correlated
+# then summarized: background and counter are strongly negatively correlated
 # (they sum to ~the observed count), so dividing the summary means would give
 # an interval with no meaning. Mean and HPD match combined_counts.tex.
 #

@@ -38,7 +38,7 @@ A sibling of `10a_animExport.R` rather than an edit to it: it doesn't need
     per day (model day 0 = Oct 1) the median + 95% quantiles across draws of
     expected background calls (actual, quiet), the contact-call gap, and the
     whole-exchange gap = contact gap / (1 − α/η) — all computed per draw.
-  - `season`: the same four totals over the whole window, per draw summarised.
+  - `season`: the same four totals over the whole window, per draw summarized.
 - Checks: knots reproduce `lam0 = exp(Xβ + δW)` from the components;
   season background total agrees with `num/` within a few %.
 
@@ -49,7 +49,7 @@ A sibling of `10a_animExport.R` rather than an edit to it: it doesn't need
 - Same **+5 dB** at all three buoys. Retention = exp(β_noise · 5 / dB_per_SD),
   where dB_per_SD is the SD of RMS (dB re 1 µPa) across that buoy's knots,
   calibrated on the laptop from `data/<buoy>_rms_data.rds`.
-- One row per buoy of 10 filled circles; the lost share greyed out (fractional
+- One row per buoy of 10 filled circles; the lost share grayed out (fractional
   last circle allowed), with the % detected and its 95% interval as text.
 - Title says *detect*. Static, not a build.
 - **Accept:** retention per buoy within its 95% interval matches
@@ -63,7 +63,7 @@ A sibling of `10a_animExport.R` rather than an edit to it: it doesn't need
   lighter band = whole exchanges (contact gap × 1/(1 − α/η)). The headline
   number is the whole-exchange total ("≈ N calls, X% of what we'd have heard").
 - Title **"Calls missing on noisy days"**. Caption: **"Missing = missed by
-  the detector, or never made"**, then (1) masking and (2) behaviour as
+  the detector, or never made"**, then (1) masking and (2) behavior as
   numbered lines (text, not icons: emoji/glyph icons don't render reliably in
   the cairo PDFs), then "Detections alone cannot tell these apart." The
   Lombard effect goes in Q&A notes, not on the slide.
@@ -88,9 +88,9 @@ A sibling of `10a_animExport.R` rather than an edit to it: it doesn't need
 - Per buoy, daily small multiples: noise, SST, seasonal cycles, leftover (GP),
   and answering (λ/μ from the calls via `excite_grid()`).
 - Each background piece as exp(daily mean of its log contribution − season
-  mean), on one shared log axis labelled "× typical". Answering is the daily
-  ratio of total to background expected calls, left uncentred so 1x = no
-  answers that day (centring would put call-free days below 1x).
+  mean), on one shared log axis labeled "× typical". Answering is the daily
+  ratio of total to background expected calls, left uncentered so 1x = no
+  answers that day (centering would put call-free days below 1x).
 - NS01 main slide; COX01 and NS02 backups.
 - **Accept:** product of the four background factors × intercept reproduces
   the daily background (up to the daily-averaging of logs).

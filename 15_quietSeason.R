@@ -47,7 +47,7 @@ title    <- 'Calls missing on noisy days'
 subtitle <- 'Expected calls per day as fitted, and with noise held to the quietest 10% of times'
 caveat   <- paste0('Missing = missed by the detector, or never made:\n',
                    '   (1) masking: the whales called and we did not hear them\n',
-                   '   (2) behaviour: the whales called less\n',
+                   '   (2) behavior: the whales called less\n',
                    'Detections alone cannot tell these apart.')
 
 fill_scale <- scale_fill_manual(
