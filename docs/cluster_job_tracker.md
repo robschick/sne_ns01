@@ -33,23 +33,33 @@ sacct -u rss10 -S now-3days -X -o JobID,JobName%16,State,Elapsed,MaxRSS,End
 
 `State` is the answer: `COMPLETED` = done; `RUNNING`/`PENDING` = not yet;
 `FAILED`, `OUT_OF_MEMORY`, `TIMEOUT`, `CANCELLED` = needs attention (send the log
-to Claude). For memory use of a finished job, drop `-X` so the step rows show
+to Claude). Exception: jobs named `bash` or `sys/dashboard/...` are interactive
+sessions (`srun bash`, OnDemand), not pipeline jobs; ignore their state. For memory use of a finished job, drop `-X` so the step rows show
 `MaxRSS`.
 
 ## 3. How far along each fit is
 
-The log names are `out/lgcp_fit_<jobid>_lgcp_fit.log`. Use the job IDs from
-step 1:
+The 10-23 jobs are 59422333 and 59422334 (logs
+`out/lgcp_fit_<jobid>_lgcp_fit.log`; the first line of each names the buoy).
+`tail` doesn't show progress: every 1,000-iteration block prints the same
+"Generated 100 … 1000 samples" lines.
+
+a. Confirm both resumed from 100k (one line each:
+`=== resuming ...: 100000 -> 150000 iterations ===`):
 
 ```bash
-tail -n 5 out/lgcp_fit_<NS01 jobid>_lgcp_fit.log
+grep -h "resuming" out/lgcp_fit_59422333_lgcp_fit.log out/lgcp_fit_59422334_lgcp_fit.log
 ```
+
+b. Count finished blocks. Each count is thousands of iterations done on top of
+100k; 50 means finished. At September speed, expect ~25/day for NS01 and ~7/day
+for NS02. Count ÷ days elapsed gives the finish date.
 
 ```bash
-tail -n 5 out/lgcp_fit_<NS02 jobid>_lgcp_fit.log
+grep -c "Generated 1000 samples" out/lgcp_fit_59422333_lgcp_fit.log out/lgcp_fit_59422334_lgcp_fit.log
 ```
 
-The fit saves every 1,000 iterations, so the file's timestamp shows it is
+c. The fit saves after every block, so the file's timestamp shows it is
 still moving:
 
 ```bash
@@ -66,7 +76,7 @@ Shown for NS01; swap `ns01` → `ns02` later.
 a. Confirm it ran to 150k and archived to /hpc:
 
 ```bash
-tail -n 20 out/lgcp_fit_<NS01 jobid>_lgcp_fit.log
+tail -n 20 out/lgcp_fit_<jobid>_lgcp_fit.log
 ```
 
 ```bash
