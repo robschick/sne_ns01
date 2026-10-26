@@ -4,7 +4,7 @@
 # Share still detected after +5 dB = exp(beta_noise * 5 / dB_per_SD), per
 # posterior draw, where dB_per_SD is the SD of RMS noise (dB re 1 uPa) across
 # the buoy's knots (the model's noise covariate is standardized per buoy).
-# Shown as 10 calls per buoy with the lost share grayed out.
+# Shown as 10 calls per buoy as whale icons: filled = still detected, outlined = lost.
 #
 # Usage:   Rscript 14_volumeKnob.R
 # Input:   out/anim/<buoy>_params.rds (10b_paramExport.R), data/<buoy>_rms_data.rds
@@ -12,6 +12,7 @@
 # =============================================================================
 
 source('src/talk_figs.R')
+source('src/whale_icon.R')
 
 step_db <- 5
 
@@ -28,21 +29,25 @@ print(format(ret, digits = 3), row.names = FALSE)
 write.csv(ret, 'fig/talk/volume_knob.csv', row.names = FALSE)
 
 ret$site <- factor(ret$site, rev(labels[buoys]))
+ret$row  <- as.integer(ret$site)
 dots <- do.call(rbind, lapply(seq_len(nrow(ret)), function(i)
-  data.frame(site = ret$site[i], k = 1:10, heard = 1:10 <= round(10 * ret$kept[i]))))
+  data.frame(x = 1:10, y = ret$row[i], heard = 1:10 <= round(10 * ret$kept[i]))))
+# ~1.65 x units and ~0.75 y units per printed inch at this size (13.33 x 5.5 in)
+whales <- whale_at(dots, size = 0.92, aspect = 0.45)
 
-p <- ggplot(dots, aes(k, site)) +
-  geom_point(aes(colour = heard), size = 13) +
-  geom_point(data = dots[!dots$heard, ], shape = 21, size = 13, colour = 'grey60',
-             stroke = 1, fill = NA) +
-  geom_text(data = ret, aes(x = 11, y = site,
+p <- ggplot(whales, aes(x, y, group = id)) +
+  geom_polygon(aes(fill = heard, colour = heard), linewidth = 0.6, linejoin = 'round') +
+  geom_text(data = ret, aes(x = 11, y = row, group = NULL,
                             label = sprintf('%.0f%% still detected  (%.0f–%.0f%%)',
                                             100 * kept, 100 * kept_lo, 100 * kept_hi)),
             hjust = 0, size = 7) +
-  scale_colour_manual(values = c(`TRUE` = 'grey15', `FALSE` = 'grey92'), guide = 'none') +
+  scale_fill_manual(values = c(`TRUE` = 'grey15', `FALSE` = 'white'), guide = 'none') +
+  scale_colour_manual(values = c(`TRUE` = 'grey15', `FALSE` = 'grey55'), guide = 'none') +
   scale_x_continuous(limits = c(0.4, 19.5), expand = c(0, 0)) +
+  scale_y_continuous(breaks = ret$row, labels = as.character(ret$site),
+                     limits = c(0.5, nrow(ret) + 0.5), expand = c(0, 0)) +
   labs(title = sprintf('Turn the ocean up %d dB, and we detect fewer calls', step_db),
-       subtitle = 'Each row: 10 calls on a typical day, and how many we still detect when it is 5 dB noisier',
+       subtitle = 'Each row: 10 calls on a typical day. Filled = still detected when it is 5 dB noisier',
        x = NULL, y = NULL) +
   theme_talk +
   theme(axis.text.x = element_blank(), panel.grid = element_blank(),

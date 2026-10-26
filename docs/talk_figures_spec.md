@@ -49,8 +49,10 @@ A sibling of `10a_animExport.R` rather than an edit to it: it doesn't need
 - Same **+5 dB** at all three buoys. Retention = exp(β_noise · 5 / dB_per_SD),
   where dB_per_SD is the SD of RMS (dB re 1 µPa) across that buoy's knots,
   calibrated on the laptop from `data/<buoy>_rms_data.rds`.
-- One row per buoy of 10 filled circles; the lost share grayed out (fractional
-  last circle allowed), with the % detected and its 95% interval as text.
+- One row per buoy of 10 right whale icons (one per call): filled = still
+  detected, outlined = lost (share rounded to whole calls), with the % detected
+  and its 95% interval as text. Icon traced from the NOAA Fisheries
+  illustration by `src/whale_icon.R` into `src/whale_polygon.csv`.
 - Title says *detect*. Static, not a build.
 - **Accept:** retention per buoy within its 95% interval matches
   exp(β · 5 / dB_per_SD) by hand; the dB calibration regression has R² > 0.999.
