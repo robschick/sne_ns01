@@ -53,8 +53,12 @@ for b in $BUOYS; do
 done
 
 # All-buoy loops — run with NO --buoy (they set BUOY internally; a --buoy arg
-# would pin every row to one buoy).
-echo "===== all-buoy summaries ====="
-Rscript 05_sumCombined.R
-Rscript 05c_sumRTCTzoomAll.R
-Rscript 08_qqDispersion.R
+# would pin every row to one buoy). Skip them with ALL_BUOY=false while only
+# some buoys have fresh outputs, so the combined figures don't mix fits:
+#   sbatch --export=ALL,BUOYS=ns01,ALL_BUOY=false aci_sum.sh
+if [[ "${ALL_BUOY:-true}" == "true" ]]; then
+  echo "===== all-buoy summaries ====="
+  Rscript 05_sumCombined.R
+  Rscript 05c_sumRTCTzoomAll.R
+  Rscript 08_qqDispersion.R
+fi

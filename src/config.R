@@ -40,7 +40,7 @@ buoy_settings <- list(
     noise_file = "ns01_rms_data.rds",
     sst_col = "NS01",
     deploy_time = "2021-03-18 06:27:00",
-    burn = 50000
+    burn = 100000   # 150k resume 2026-10: keep last 50k (-2logL flat; 50k-100k was trending)
   ),
   ns02 = list(
     call_file = "ns_02_all.rds",
