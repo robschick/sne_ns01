@@ -1,0 +1,569 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,mathtools,bm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+
+\captionsetup{font=small,labelfont=bf}
+\setlist{itemsep=2pt,topsep=4pt}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\Cov}{\operatorname{Cov}}
+\newcommand{\bx}{\bm{x}}
+\newcommand{\bb}{\bm{\beta}}
+\newcommand{\dB}{\,\textrm{dB}}
+
+\title{From fitted Hawkes parameters to interpretable quantities:\\
+noise, missing calls and the drivers of the call rate}
+\author{Rob Schick\\[2pt]\small Draft for discussion, not for circulation}
+\date{28 October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+We fit a log-Gaussian Cox background with self-exciting (Hawkes) triggering to
+North Atlantic right whale upcall detections at three passive acoustic buoys
+in southern New England. This note describes three derived quantities we
+propose to report, each a functional of the posterior. They are the
+multiplicative effect of a fixed increase in ambient noise on the detected
+call rate; a counterfactual count of calls ``missing'' at noisy times; and a
+day-by-day multiplicative decomposition of the background rate. We give the
+definitions, the computations, the current estimates and the assumptions each
+one leans on. We also set out three extensions we would like feedback on: a
+sonar-equation benchmark for the noise slope, a noise-dependent branching
+ratio as a model-based handle on masking versus behavior, and an honest
+attribution of the seasonal trend.
+\end{abstract}
+
+\paragraph{Status of the fits.}
+COX01 is the clean-data refit (100k iterations, burn-in 75k). NS01 is the
+chain extended to 150k with burn-in 100k; its $-2\log L$ trace is flat over
+the retained draws. NS02 is still the 100k chain with burn-in 50k. That chain
+had not converged, and a 150k extension is running, so the NS02 numbers below
+are provisional. Every functional is computed from 2{,}000 equally spaced
+post-burn-in draws.
+
+\section{Model}\label{sec:model}
+
+Let $t_1<\dots<t_n$ be detected upcall times (minutes) on $[0,T]$, with $T$
+covering 1 October 2021 to 1 March 2022 (151 days). We observe $n=6{,}098$
+calls at COX01, $13{,}017$ at NS01 and $33{,}611$ at NS02. The conditional
+intensity is
+\begin{equation}\label{eq:lambda}
+\lambda(t\mid\mathcal{H}_t)=\mu(t)+\sum_{t_i<t}\alpha\,e^{-\eta(t-t_i)},
+\qquad
+\mu(t)=\exp\{\bx(t)^\top\bb+\delta\,W(t)\}.
+\end{equation}
+The kernel is unnormalized, so the branching ratio (the expected number of
+calls directly triggered by one call) is $m=\alpha/\eta$. We need $m<1$. The
+expected cluster size is $1/(1-m)$, and the half-life of the excitation is
+$\log 2/\eta$.
+
+\paragraph{Background.}
+$\bx(t)$ contains an intercept; ambient noise $x_n(t)$ (Section~\ref{sec:db});
+daily sea-surface temperature $x_{s}(t)$ (NOAA OISST, standardized); and sine
+and cosine pairs at periods of 1, 7, 14, 30 and 60 days. That makes
+$p=13$ columns. $W$ is a zero-mean, unit-variance Gaussian process with
+exponential covariance $\Cov\{W(s),W(s')\}=\exp(-|s-s'|/\rho)$, an
+Ornstein--Uhlenbeck process. The range is fixed at $\rho=60$ min, so the
+correlation is $e^{-3}$ at 3 h. $\delta>0$ scales it. The background is
+evaluated at knots $s_0,\dots,s_M$ spaced 20 min apart
+($M\approx10{,}800$) and interpolated linearly between them. The compensator
+$\int_0^T\mu$ is computed by the trapezoid rule on the same knots.
+
+\paragraph{Priors and computation.}
+$\bb\sim N(\bm 0,100\,I)$, $\log\delta\sim N(0,100)$,
+$\alpha\sim\mathrm{Gamma}(0.001,0.001)$ and
+$\eta\sim U(0.15,\,3/\min_i(t_{i+1}-t_i))$ per minute. The sampler augments
+the data with the latent branching structure (each call is either an
+immigrant or the offspring of a specific earlier call), drawn by Gibbs. Given
+the branching structure, $\alpha$ is conjugate, with shape $0.001+n_{\rm off}$
+and rate $0.001+\eta^{-1}\sum_i(1-e^{-\eta(T-t_i)})$. $\bb$, $\log\delta$ and
+$\eta$ are updated by adaptive random-walk Metropolis (target acceptance
+0.234), and $W$ at the knots by elliptical slice sampling.
+
+\paragraph{A posterior predictive check.}
+Under~\eqref{eq:lambda}, ignoring edge effects (the half-life is about
+2~min, far shorter than any interval we sum over), the expected number of
+calls in a set $A$ is
+\begin{equation}\label{eq:EN}
+\E N(A)\approx\frac{1}{1-m}\int_A\mu(t)\,dt.
+\end{equation}
+Over the whole window the posterior median of~\eqref{eq:EN} is $6{,}086$,
+$13{,}014$ and $33{,}589$, against observed counts of $6{,}098$, $13{,}017$
+and $33{,}611$. That agreement is a property of a well-mixed fit, not
+evidence for the noise model, but it confirms the functionals below are on
+the right scale. Table~\ref{tab:params} gives the parameter summaries.
+
+\begin{table}[H]
+\centering\small
+\caption{Posterior medians (95\% equal-tailed intervals) of the parameters
+used below. $\beta_n$ and $\beta_s$ are coefficients on the standardized
+noise and SST covariates. NS02 is provisional.}
+\label{tab:params}
+\begin{tabular}{lccc}
+\toprule
+& COX01 & NS01 & NS02 \\
+\midrule
+$\alpha$ & 0.203 (0.185, 0.223) & 0.223 (0.209, 0.238) & 0.294 (0.283, 0.305)\\
+$\eta$ (min$^{-1}$) & 0.340 (0.308, 0.379) & 0.386 (0.361, 0.419) & 0.494 (0.453, 0.527)\\
+$m=\alpha/\eta$ & 0.594 (0.561, 0.634) & 0.576 (0.546, 0.604) & 0.596 (0.567, 0.641)\\
+$1/(1-m)$ & 2.47 (2.28, 2.73) & 2.36 (2.20, 2.53) & 2.47 (2.31, 2.79)\\
+$\log2/\eta$ (min) & 2.04 (1.83, 2.25) & 1.79 (1.66, 1.92) & 1.40 (1.32, 1.53)\\
+$\delta$ & 2.03 (1.89, 2.15) & 1.81 (1.73, 1.90) & 1.60 (1.54, 1.66)\\
+$\beta_n$ & $-0.590$ ($-0.705$, $-0.466$) & $-1.477$ ($-1.628$, $-1.333$) & $-0.796$ ($-0.889$, $-0.727$)\\
+$\beta_s$ & $-2.84$ ($-3.12$, $-2.54$) & $-1.76$ ($-1.97$, $-1.62$) & $-1.39$ ($-1.49$, $-1.31$)\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Putting the noise coefficient on the decibel scale}\label{sec:db}
+
+The noise covariate is the RMS noise level from the recorder, rescaled per
+deployment and then standardized over the knots:
+$x_n(s)=\{y(s)-\bar y\}/\mathrm{sd}(y)$. The RMS level in
+dB re 1\,$\mu$Pa is an affine function of $y$; a regression on the raw
+one-minute files recovers it with $R^2>0.999$ at every buoy. So
+\[
+x_n(s)=\frac{L(s)-\bar L}{s_L},
+\]
+where $L$ is the noise level in dB and $s_L$ is its standard deviation over
+the knots: 4.00\dB\ (COX01), 6.02\dB\ (NS01) and 5.30\dB\ (NS02). The
+coefficient $\beta_n/s_L$ is therefore the change in $\log\mu$ per dB of
+noise. The RMS level is measured in the right whale upcall band, at the
+hydrophone.
+
+\section{Fig.~4: the effect of a fixed increase in noise}\label{sec:fig4}
+
+\paragraph{Estimand.}
+For an increase of $\Delta$ dB at a fixed time, holding everything else fixed,
+\begin{equation}\label{eq:R}
+R(\Delta)=\frac{\mu(t;\,L+\Delta)}{\mu(t;\,L)}=\exp\!\left(\frac{\beta_n\Delta}{s_L}\right),
+\end{equation}
+which doesn't depend on $t$. By~\eqref{eq:EN}, $R(\Delta)$ is also the ratio of
+expected \emph{total} detected calls, triggered calls included, as long as noise
+acts only on $\mu$. Section~\ref{sec:thin} questions that assumption. We take
+$\Delta=5$\dB, which is about one $s_L$ at each buoy, so the comparison is
+between sites on the same physical scale rather than the same standardized
+one. The posterior of $R$ comes from the draws of $\beta_n$, with $s_L$
+treated as known.
+
+\begin{table}[H]
+\centering\small
+\caption{Noise effect on the detected call rate. The slope is $\beta_n/s_L$,
+in log-rate per dB. $R(\Delta)$ is the multiplicative effect of $+\Delta$\dB.}
+\label{tab:noise}
+\begin{tabular}{lcccc}
+\toprule
+& $s_L$ (dB) & slope (per dB) & $R(1\dB)$ & $R(5\dB)$\\
+\midrule
+COX01 & 4.00 & $-0.148$ ($-0.176$, $-0.117$) & 0.863 (0.839, 0.890) & 0.478 (0.415, 0.558)\\
+NS01 & 6.02 & $-0.245$ ($-0.271$, $-0.221$) & 0.782 (0.763, 0.801) & 0.293 (0.259, 0.331)\\
+NS02 & 5.30 & $-0.150$ ($-0.168$, $-0.137$) & 0.861 (0.846, 0.872) & 0.472 (0.433, 0.504)\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{volume_knob.pdf}
+\caption{Fig.~4 (talk version). Each row shows $10\,R(5\dB)$ rounded to whole
+calls. The text gives the posterior median and 95\% interval of $R(5\dB)$.}
+\end{figure}
+
+\paragraph{Proposal: a sonar-equation benchmark for the slope.}
+A per-dB slope can be compared with what pure masking predicts. In the passive
+sonar equation, a call is detected when $\mathrm{SL}-\mathrm{TL}(r)-L\ge
+\mathrm{DT}$, with transmission loss $\mathrm{TL}(r)=k\log_{10}r$. The maximum
+detection range is then $r_{\max}=10^{(\mathrm{SL}-L-\mathrm{DT})/k}$. If the
+detected call rate is proportional to the area within $r_{\max}$,
+\begin{equation}\label{eq:bench}
+\frac{\partial\log\mu}{\partial L}=-\frac{2\ln 10}{k}
+=\begin{cases}-0.230 & k=20\ \text{(spherical)},\\ -0.307 & k=15\ \text{(``practical'')},\\ -0.461 & k=10\ \text{(cylindrical)}.\end{cases}
+\end{equation}
+
+\paragraph{Assumptions behind~\eqref{eq:bench}.}
+\begin{enumerate}[label=A\arabic*.,leftmargin=2.2em]
+\item \emph{Detection depends only on the signal-to-noise ratio at the
+  hydrophone.} Masking happens at the receiver, and $L$ is measured at the
+  receiver in the upcall band, so the covariate is the right quantity. This
+  is the strongest assumption in the argument.
+\item \emph{Transmission loss is a power law}, $k\log_{10}r$, the same in all
+  directions, with negligible absorption at upcall frequencies. Shallow-water
+  loss usually lies between cylindrical and spherical, and $k$ varies with site
+  and season.
+\item \emph{Source level does not depend on noise.} SL and DT may vary from
+  call to call with any distribution, provided it is independent of $L$:
+  every call's $r_{\max}$ then scales by the same factor $10^{-\Delta/k}$.
+\item \emph{Callers are spread uniformly in the plane, out beyond $r_{\max}$.}
+\item \emph{The calling rate per animal does not depend on noise.}
+\end{enumerate}
+
+\paragraph{The shape of the detection function does not matter.}
+Let detection be probabilistic, with probability $g(\mathrm{SNR})$ for any
+function $g$. Under A2--A4 the detected area is
+\[
+\int_0^\infty g\bigl(\mathrm{SL}-\mathrm{DT}-L-k\log_{10}r\bigr)\,2\pi r\,dr
+=10^{2(\mathrm{SL}-\mathrm{DT}-L)/k}\int_0^\infty g\bigl(-k\log_{10}\rho\bigr)\,2\pi\rho\,d\rho,
+\]
+by the substitution $r=10^{(\mathrm{SL}-\mathrm{DT}-L)/k}\rho$. The remaining
+integral doesn't involve $L$, so the slope is exactly $-2\ln10/k$ whatever the
+detection curve. A smooth detection curve only matters in combination with a
+failure of A2 or A4.
+
+\paragraph{Relaxing the assumptions.}
+Three departures each change the slope in a known way.
+\begin{itemize}
+\item \emph{Lombard compensation} (fails A3): if callers raise their source
+  level by $c$ dB per dB of noise, $r_{\max}\propto10^{-(1-c)L/k}$. Tagged right
+  whales show $c\approx1$ at moderate noise (Parks et al.\ 2011).
+\item \emph{A density gradient} (fails A4): if density falls with distance as
+  $r^{-a}$, $0\le a<2$, the detected rate scales as $r_{\max}^{2-a}$. If
+  $r_{\max}$ exceeds the area callers occupy, the slope tends to 0 at low
+  noise (saturation).
+\item \emph{Calling less in noise} (fails A5): if each animal's calling rate is
+  proportional to $e^{bL}$, $b$ adds directly to the slope.
+\end{itemize}
+Together,
+\begin{equation}\label{eq:slope4}
+\frac{\partial\log\mu}{\partial L}\approx-\frac{(1-c)(2-a)\ln10}{k}+b,
+\end{equation}
+one equation in four unknowns $(k,a,c,b)$.
+
+\paragraph{What the slopes say.}
+\begin{itemize}
+\item NS01's slope, $-0.245$ ($-0.271$, $-0.221$), contains the spherical
+  benchmark. It is consistent with pure masking at $k=20$ ($c=a=b=0$). It is
+  equally consistent with some compensation offset by some reduction in calling.
+\item COX01 and NS02 are shallower ($\approx-0.15$). Under
+  \eqref{eq:slope4} there are three readings:
+  \begin{itemize}
+  \item partial compensation, $c\approx0.35$ at $k=20$ or $c\approx0.5$ at $k=15$;
+  \item callers concentrated near the buoy, $a>0$;
+  \item steeper effective transmission loss: pure masking with $k\approx31$
+    gives $-0.15$.
+  \end{itemize}
+\item A slope \emph{steeper} than any plausible masking slope would require
+  $b<0$: fewer calls made, not just fewer heard. No site shows that for
+  $k\le20$.
+\end{itemize}
+
+\paragraph{From a frame to a test.}
+We don't offer~\eqref{eq:bench} as a test yet. Three additions would make it
+one:
+\begin{itemize}
+\item site-specific $k$ from propagation modeling;
+\item a low-dimensional spline in $L$ in place of the linear term, to detect
+  saturation (curvature at low noise) directly;
+\item some handle on the density gradient $a$, for example from array
+  localizations.
+\end{itemize}
+With $k$ fixed, \eqref{eq:slope4} bounds the combination of $c$ and $b$. Two
+effects attenuate the fitted slope toward 0 and should be kept in mind. The
+covariate is a 1-minute RMS averaged to 20-minute knots, while masking acts
+call by call, so short noise spikes behave like measurement error. Orphaned
+answers (Section~\ref{sec:thin}) inflate the apparent background most at
+noisy times.
+
+\section{Fig.~6: calls missing at noisy times}\label{sec:fig6}
+
+\paragraph{Estimand.}
+Let $x_q$ be the $q$-quantile of $x_n$ over the knots of that buoy ($q=0.1$).
+The counterfactual background caps the noise at $x_q$ and leaves quieter
+times unchanged:
+\begin{equation}\label{eq:cap}
+\mu_q(s)=\mu(s)\exp\bigl[\beta_n\{\min(x_n(s),x_q)-x_n(s)\}\bigr]\ \ge\ \mu(s).
+\end{equation}
+For day $d$ let $\Lambda_d=\int_d\mu$ and $\Lambda^q_d=\int_d\mu_q$ (trapezoid
+rule on the knots). Using~\eqref{eq:EN}, the expected detected calls are
+$\Lambda_d/(1-m)$ as fitted and $\Lambda^q_d/(1-m)$ in the quiet
+counterfactual. The gap splits into missing immigrant (``contact'') calls,
+$\Lambda^q_d-\Lambda_d$, and the calls those would have triggered,
+$(\Lambda^q_d-\Lambda_d)\,m/(1-m)$. Every quantity is computed per posterior
+draw, jointly in $(\bb,\delta,W,\alpha,\eta)$, and then summarized. These are
+posteriors of \emph{expected} counts, not predictive distributions, so no
+Poisson or cluster variability is added.
+
+\begin{table}[H]
+\centering\small
+\caption{Season totals, posterior medians (95\% intervals). ``Missing'' is
+the quiet total minus the fitted total. The share is the ratio of the two
+posterior medians. Noise levels are on the knots.}
+\label{tab:quiet}
+\footnotesize\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lccccc}
+\toprule
+& \shortstack{$L_{0.1}$ / median $L$\\(dB)} & fitted & quiet ($q=0.1$) & missing & share\\
+\midrule
+COX01 & 72.9 / 77.6 & 6{,}086 (5{,}737, 6{,}466) & 11{,}456 (9{,}830, 13{,}119) & 5{,}357 (3{,}856, 6{,}933) & 47\%\\
+NS01 & 77.6 / 84.2 & 13{,}014 (12{,}477, 13{,}541) & 30{,}738 (27{,}494, 34{,}533) & 17{,}733 (14{,}698, 21{,}304) & 58\%\\
+NS02 & 76.8 / 82.5 & 33{,}589 (32{,}749, 34{,}552) & 87{,}399 (79{,}577, 98{,}646) & 53{,}667 (46{,}244, 64{,}916) & 61\%\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{quiet_season_ns01.pdf}
+\caption{Fig.~6(i). NS01 daily posterior-median expected calls, fitted (gray)
+and under the capped-noise counterfactual~\eqref{eq:cap}. The dark band is
+missing immigrant calls; the light band is the calls they would have
+triggered. Lower panel: season totals for all three buoys.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{quiet_season_all.pdf}
+\caption{Fig.~6(ii). The same for the three buoys on a shared axis.}
+\end{figure}
+
+\paragraph{What the counterfactual does and doesn't assume.}
+\begin{itemize}
+\item There's no extrapolation in $x_n$: $x_q$ is inside the observed range,
+  and the cap lowers the noise at 90\% of the knots.
+\item It does lean on the log-linear form across the whole range. If the
+  effect saturates at low noise (Section~\ref{sec:fig4}, A4), the
+  linear model overstates $\Lambda^q$.
+\item Everything else, $W$ included, is held at its fitted value. If $W$ has
+  absorbed residual structure correlated with noise, the attribution to noise
+  is affected in a direction we can't sign a priori.
+\item The gap is ``missed by the detector or never made''. Detections alone
+  don't separate masking from a behavioral reduction in calling.
+  Section~\ref{sec:thin} suggests one model-based handle.
+\end{itemize}
+
+\paragraph{Proposed sensitivity analyses.}
+Report the missing share as a function of $q\in\{0.1,0.25,0.5\}$, using the
+export's existing \texttt{PARAM\_QUIET\_Q} switch. Repeat the calculation
+under a spline-in-$L$ noise effect. As an alternative estimand that doesn't
+depend on choosing a reference level, report the average marginal loss
+$-\int\partial\E N/\partial L\,dt$ in calls per dB.
+
+\subsection{Thinning, and a handle on masking versus behavior}\label{sec:thin}
+
+If masking is the mechanism, it removes \emph{every} call with some
+probability $p(t)$, triggered calls included. Let the true calls follow a
+Hawkes process with background $\mu^\ast(t)$ and branching ratio
+$m^\ast=\alpha^\ast/\eta$. The detector then sees a thinned Hawkes process.
+
+\paragraph{Assumptions.}
+\begin{enumerate}[label=B\arabic*.,leftmargin=2.2em]
+\item \emph{Detection is independent across calls, given the noise.} This is
+  the critical assumption. If an answer comes from a different whale at an
+  unrelated range, it is detected with probability $p(t)$ independently of its
+  parent. If it is the same whale repeating in a bout, or a nearby whale, then
+  a detected parent makes a detected answer very likely: same source level,
+  same range, same noise. The model can't distinguish repeats from replies, so
+  we don't know which case dominates.
+\item \emph{$p$ is roughly constant within a cluster.} The half-life is about
+  2~min, and the noise changes more slowly than that.
+\item \emph{The thinned process is approximately Hawkes.} It isn't exactly: a
+  detected answer whose parent was missed enters as an apparent immigrant (an
+  ``orphan'').
+\end{enumerate}
+
+\paragraph{Consequences under B1.}
+\begin{enumerate}[label=(\alph*)]
+\item A detected call's detected offspring number $p\,m^\ast$ on average, so
+  the detected branching ratio falls with noise: $m(t)\approx p(t)\,m^\ast$.
+  The current model holds $m$ fixed, so under masking it is misspecified.
+\item Relative to the true immigrants, orphans number about $(1-p)\,m^\ast$.
+  They inflate the apparent background most at noisy times, which pulls the
+  fitted $\beta_n$ toward 0.
+\item Both effects make the missing counts in Table~\ref{tab:quiet}
+  underestimates. A larger $m$ at quiet times raises the quiet multiplier
+  $1/(1-m_q)$, and the true background slope is steeper than fitted.
+  Saturation (A4) pushes the other way, so the net direction is not
+  guaranteed.
+\end{enumerate}
+
+\paragraph{Proposed model.}
+Let the noise at the parent's time scale its offspring:
+$\alpha_i=\alpha\exp\{\gamma\,x_n(t_i)\}$. Given the branching structure,
+call $i$'s offspring count is Poisson with mean
+$\alpha e^{\gamma x_i}(1-e^{-\eta(T-t_i)})/\eta$. So $\alpha$ stays conjugate,
+with full conditional
+\[
+\alpha\mid\cdot\sim\mathrm{Gamma}\Bigl(0.001+n_{\rm off},\;
+0.001+\eta^{-1}\textstyle\sum_i e^{\gamma x_i}\bigl(1-e^{-\eta(T-t_i)}\bigr)\Bigr),
+\]
+and the only new piece is a Metropolis step for $\gamma$. If the noise at the
+child's time matters more, a variant puts $e^{\gamma x(t)}$ inside the kernel
+integral. That is nearly identical here, because $x_n$ barely changes within a
+2-minute cluster.
+
+\paragraph{Interpreting $\gamma$.}
+If masking is the mechanism:
+\begin{itemize}
+\item $\gamma\approx\beta_n$: answers are thinned independently of their
+  parents (different whales at unrelated ranges);
+\item $\gamma\approx0$: answers are detected together with their parents
+  (same-whale bouts);
+\item $\gamma/\beta_n\in[0,1]$ measures roughly the fraction of answers whose
+  detection is independent of their parent's.
+\end{itemize}
+If noise acts on behavior instead, $\gamma<0$ would mean whales answer less in
+noise. So $\gamma$ constrains the mechanism; it doesn't prove masking. Few calls
+are detected at high noise, so the posterior for $\gamma$ may be wide exactly
+where it matters; its width will tell us.
+
+\section{Fig.~7: what moved the call rate}\label{sec:fig7}
+
+\paragraph{Decomposition.}
+At each knot,
+\[
+\log\mu(s)=\beta_0+\underbrace{\beta_n x_n(s)}_{c_n(s)}+\underbrace{\beta_s x_s(s)}_{c_s(s)}
++\underbrace{\textstyle\sum_j\beta_j h_j(s)}_{c_h(s)}+\underbrace{\delta W(s)}_{c_W(s)}.
+\]
+For component $c$ and day $d$ let $\bar c(d)$ be the mean over the knots in
+$d$. Fig.~7 plots
+\[
+F_c(d)=\exp\Bigl\{\bar c(d)-\tfrac{1}{D}\textstyle\sum_{d'}\bar c(d')\Bigr\},
+\]
+the factor by which component $c$ multiplied the background on day $d$,
+relative to its own season average. The product over components of $F_c(d)$
+times a constant is the geometric-mean background on day $d$. The
+components use per-knot posterior medians, a plug-in summary; the median of
+the sum is not the sum of the medians, so the panels don't multiply exactly
+to the posterior-median background.
+
+\paragraph{Answering.}
+The bottom panel is the data-conditional ratio
+\[
+A(d)=\frac{\sum_{s\in d}\{\mu(s)+\phi(s)\}}{\sum_{s\in d}\mu(s)},\qquad
+\phi(s)=\sum_{t_i<s}\alpha e^{-\eta(s-t_i)},
+\]
+on a 5-min grid, using the observed calls and plug-in posterior medians. It
+is left uncentered, so $A=1$ on call-free days. Its geometric mean over days
+is 1.48 (COX01), 1.57 (NS01) and 2.11 (NS02). For NS01, $\mu$, $\alpha$ and
+$\eta$ in this panel still come from the 100k fit; that will be updated.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{rate_drivers_ns01.pdf}
+\caption{Fig.~7, NS01. Daily multiplicative factors $F_c(d)$ for the four
+background components, and the answering ratio $A(d)$. Log scale.
+COX01 and NS02 are in the Appendix.}
+\end{figure}
+
+\paragraph{Variance attribution.}
+To summarize the panels we split the day-to-day variance of the daily-mean
+log background, $S(d)=\sum_c\bar c(d)$, into
+$\Cov\{\bar c(d),S(d)\}/\Var\{S(d)\}$. These shares sum to one and can be
+negative when components are negatively correlated
+(Table~\ref{tab:var}).
+
+\begin{table}[H]
+\centering\small
+\caption{Covariance shares of the variance of the log background, at daily
+means and at the 20-min knots. Plug-in posterior medians.}
+\label{tab:var}
+\begin{tabular}{lcccccccc}
+\toprule
+& \multicolumn{4}{c}{daily means} & \multicolumn{4}{c}{knots}\\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}
+& noise & SST & harmonics & GP & noise & SST & harmonics & GP\\
+\midrule
+COX01 ($\Var S=9.84$) & $-0.02$ & 0.79 & 0.18 & 0.06 & 0.00 & 0.62 & 0.15 & 0.22\\
+NS01 ($\Var S=6.90$) & 0.29 & 0.50 & 0.08 & 0.14 & 0.29 & 0.37 & 0.06 & 0.29\\
+NS02 ($\Var S=2.71$) & $-0.07$ & 0.49 & 0.14 & 0.44 & 0.02 & 0.28 & 0.10 & 0.60\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+What Table~\ref{tab:var} shows:
+\begin{itemize}
+\item Noise is a major driver of day-to-day variation only at NS01. A
+  component's variance is $\beta^2$ times the variance of its covariate. NS01
+  has the largest per-SD effect ($-1.48$) and the most variable daily noise:
+  the SD of daily-mean $L$ is 4.9\dB, against 2.0\dB\ at COX01 and 3.7\dB\ at
+  NS02.
+\item At COX01 and NS02 the noise contribution is negatively correlated with
+  the rest of the background ($-0.33$ and $-0.48$ at daily means; $-0.15$ and
+  $-0.30$ at knots). That cancels most of its own variance, so its share is
+  near zero at both scales, not just day to day.
+\item At NS02, daily noise and SST contributions correlate at $-0.74$. Both
+  coefficients are negative, so louder days fall later in the season, as
+  winter storms build while whales arrive. Much of the variation that
+  identifies $\beta_n$ there is sub-seasonal, and the split between
+  noise and season is weakly identified.
+\item The GP share at NS02 (0.44 daily, 0.60 at knots) says there is a lot of
+  residual structure on scales the covariates don't reach. We read it as a
+  goodness-of-fit diagnostic as much as a driver.
+\end{itemize}
+
+\paragraph{Identifiability of the seasonal trend.}
+The harmonics have periods of at most 60 days over a 151-day window. They can
+represent recurring rhythms but approximate a monotone trend only poorly. The
+GP has a 3-hour memory and can't carry one either. SST is the only smooth,
+monotone term, and over the window it correlates with time at $-0.99$,
+$-0.98$ and $-0.96$. In practice $c_s$ is therefore the seasonal trend, and
+$\beta_s$ should not be read as an effect per $^\circ$C. With one season per
+site, temperature and time of year are confounded. We propose either
+replacing SST with an explicit smooth trend in time, or reporting $c_s+c_h$
+together as ``season'', and keeping SST for when multiple seasons or
+decorrelated sites are available.
+
+\paragraph{Proposed improvements.}
+Compute $F_c(d)$ and $A(d)$ per draw and show pointwise 95\% bands. Report
+the shares in Table~\ref{tab:var} with posterior intervals. Given the
+correlations between components, consider a Shapley-type attribution, which
+is order-invariant, as an alternative to covariance shares.
+
+\section{Questions for discussion}
+
+\begin{enumerate}
+\item Is the sonar-equation benchmark~\eqref{eq:bench} a useful frame for the
+  noise slope? How should uncertainty in $k$ and the density gradient $a$ be
+  carried into~\eqref{eq:slope4}?
+\item Detection belongs in the model. Is a noise-dependent kernel
+  (Section~\ref{sec:thin}) adequate, or should we fit the thinning explicitly,
+  with undetected calls as latent variables?
+\item Is the capped-noise expected count the right estimand for ``calls
+  lost to noise''? Or is the average marginal effect in calls per dB cleaner,
+  since it avoids choosing a reference level?
+\item NS01's $\eta$ drifted across the first 100k iterations, with a matching
+  shift between the GP background and the excitation. That is the usual
+  clustering-versus-contagion trade-off. Would a reparameterization in
+  $(m,\eta)$, or a prior on $\delta$, reduce it?
+\end{enumerate}
+
+\appendix
+\section{Fig.~7 for COX01 and NS02}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{rate_drivers_cox01.pdf}
+\caption{COX01.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{rate_drivers_ns02.pdf}
+\caption{NS02 (provisional fit).}
+\end{figure}
+
+\raggedright
+\paragraph{Reference.}
+Parks, S.~E., Johnson, M., Nowacek, D.\ and Tyack, P.~L. (2011). Individual
+right whales call louder in increased environmental noise.
+\emph{Biology Letters} 7(1), 33--35. doi:10.1098/rsbl.2010.0451.
+
+\paragraph{Reproducibility.}
+Cluster export: \texttt{10b\_paramExport.R}. Figures:
+\texttt{14\_volumeKnob.R}, \texttt{15\_quietSeason.R} and
+\texttt{17\_rateDrivers.R}, with the shared helpers in
+\texttt{src/talk\_figs.R}.
+
+\end{document}
