@@ -115,6 +115,11 @@ ub_eta = 3 / min(diff(ts))
 # FIT_NITERS overrides the chain length for one run (e.g. extending one buoy
 # with FIT_RESUME) without changing niters_lgcp for every buoy.
 niters = as.integer(Sys.getenv('FIT_NITERS', unset = niters_lgcp))
+# A chain no longer than the buoy's burn-in leaves nothing to summarize; stop
+# now rather than after days of sampling (NS01 burns 100000 > niters_lgcp)
+if (niters <= buoy_cfg$burn)
+  stop(sprintf('niters (%d) <= burn for %s (%d); set FIT_NITERS above the burn-in',
+               niters, buoy, buoy_cfg$burn))
 updateCOV = TRUE
 outers = c(0, seq(1000, niters, by = 1000))
 

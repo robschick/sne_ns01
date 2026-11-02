@@ -170,7 +170,7 @@ draw_payoff <- function() {
              label = 'The hydrophone records only the bottom row.') +
     annotate('text', x = x_end / 2, y = n_gen - 1.5, size = 4.6, lineheight = 0.95,
              label = paste0('The model can\'t say which call answered which, but it can count them:\n',
-                            'over NS01\'s season, ~5,057 contact calls and ~7,966 answers.'))
+                            'over NS01\'s season, ~5,531 contact calls and ~7,484 answers.'))
 }
 
 # Opener: the data as recorded, with nothing above it

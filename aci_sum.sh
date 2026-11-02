@@ -37,6 +37,10 @@ module load R/4.1.1-rhel8
 
 cd $SLURM_SUBMIT_DIR
 
+# Stop at the first failing Rscript so SLURM reports FAILED, not COMPLETED
+# (set after `module load`, whose scripts don't tolerate -u)
+set -euo pipefail
+
 # Per-buoy summaries (each takes --buoy). Override the list with e.g.
 #   sbatch --export=ALL,BUOYS="cox01 ns01" aci_sum.sh
 BUOYS="${BUOYS:-cox01 ns01 ns02}"

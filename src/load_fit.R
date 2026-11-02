@@ -42,6 +42,9 @@ deltaInd <- p + 1
 alphaInd <- p + 2
 etaInd   <- p + 3
 
+if (nrow(postSamples) <= burn)
+  stop(sprintf('Fit has %d iterations but burn is %d: no posterior draws left',
+               nrow(postSamples), burn))
 postSamples <- postSamples[-(1:burn), ]
 postWm      <- postWm[-(1:burn), ]
 
