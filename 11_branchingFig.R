@@ -5,13 +5,14 @@
 # a cascade simulated at NS01's fitted self-excitation (alpha, eta). Rows are
 # Background, Gen. 1, Gen. 2, ... and Observations; each build adds calls
 # cluster by cluster. The last frame is the payoff: the observations alone,
-# each shaded by the model's probability that it is a contact call.
+# each shaded by the model's probability that it is a contact call. Frame 0
+# opens the build with the observed event series alone.
 #
 # Usage:
 #   Rscript 11_branchingFig.R [--seed=N]
 #
 # Input:  out/anim/ns01_anim.rds   (from 10a_animExport.R; alpha, eta)
-# Output: fig/talk/branching/branching_<k>.png, branching_build.pdf
+# Output: fig/talk/branching/branching_<k>.png (k = 0..7), branching_build.pdf
 # =============================================================================
 
 library(ggplot2)
@@ -109,7 +110,9 @@ lab <- rbind(
   with(tree[tree$type == 'counter' & tree$kids == 0, ][1, ],
        data.frame(t, y = y - 0.38, txt = 'counter-call', col = col_counter)))
 
+# tree_col = NA drops the tree rows, leaving the observations row in place
 base_plot <- function(tree_col = 'black') {
+  if (is.na(tree_col)) rows <- rows[rows$label == 'Observations', ]
   rows$col <- ifelse(rows$label == 'Observations', 'black', tree_col)
   ggplot() +
     geom_segment(data = rows, aes(x = 0, xend = x_end, y = y, yend = y, colour = I(col)),
@@ -170,7 +173,11 @@ draw_payoff <- function() {
                             'over NS01\'s season, ~5,057 contact calls and ~7,966 answers.'))
 }
 
+# Opener: the data as recorded, with nothing above it
+draw_observed <- function() base_plot(tree_col = NA) + geom_point(data = tree, aes(t, y_obs), size = 3.2)
+
 # ── Builds ───────────────────────────────────────────────────────────────────
+# 0: observations only
 # 1: first contact call   2: + its answer   3: + second contact call
 # 4: + the second exchange's chain of answers (answers get answered)
 # 5: everything but the last exchange   6: all, with t_i
@@ -184,12 +191,13 @@ builds <- list(
   rep(TRUE, nrow(tree))
 )
 
-plots <- c(lapply(seq_along(builds), function(k)
+plots <- c(list(draw_observed()),
+           lapply(seq_along(builds), function(k)
              draw_build(builds[[k]], t_labels = k == length(builds))),
            list(draw_payoff()))
 
 for (k in seq_along(plots))
-  ggsave(file.path(out_dir, sprintf('branching_%d.png', k)), plots[[k]],
+  ggsave(file.path(out_dir, sprintf('branching_%d.png', k - 1)), plots[[k]],
          width = w, height = h, dpi = 200)
 pdf(file.path(out_dir, 'branching_build.pdf'), width = w, height = h)
 invisible(lapply(plots, print))
