@@ -11,7 +11,7 @@
 # Usage:
 #   Rscript 11_branchingFig.R [--seed=N]
 #
-# Input:  out/anim/ns01_anim.rds   (from 10a_animExport.R; alpha, eta)
+# Input:  none (alpha, eta and seed frozen below)
 # Output: fig/talk/branching/branching_<k>.png (k = 0..7), branching_build.pdf
 # =============================================================================
 
@@ -23,9 +23,11 @@ seed_arg <- sub('^--seed=', '', grep('^--seed=', args, value = TRUE))
 out_dir  <- 'fig/talk/branching'
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
-fit   <- readRDS('out/anim/ns01_anim.rds')$fit
-alpha <- fit$alpha                   # jump size per call (per min), unnormalized kernel
-eta   <- fit$eta                     # decay rate (per min)
+# The cascade is an illustration, so its alpha, eta and seed are frozen at the
+# values the slides were built with (NS01's 100k fit, out/anim/ns01_anim.rds of
+# 2026-10-19). Re-reading a newer export would redraw every frame.
+alpha <- 0.2237331                   # jump size per call (per min), unnormalized kernel
+eta   <- 0.3693910                   # decay rate (per min)
 br    <- alpha / eta                 # mean answers per call
 cat(sprintf('NS01: alpha %.3f, eta %.3f -> %.2f answers per call, half-life %.1f min\n',
             alpha, eta, br, log(2) / eta))
@@ -48,13 +50,11 @@ legible <- function(tr) {
     max(tr$t) < horizon - 1 && abs((nrow(tr) - nc) / nrow(tr) - br) < 0.08
 }
 
-seed <- if (length(seed_arg)) as.integer(seed_arg) else {
-  s <- Find(function(s) legible(simulate_family_tree(mu, alpha, eta, horizon, seed = s)),
-            1:20000)
-  if (is.null(s)) stop('No legible seed in 1:20000; relax legible()')
-  s
-}
+# 301 is the first seed in 1:20000 passing legible() at these alpha, eta.
+# --seed=N tries another; legible() is checked either way.
+seed <- if (length(seed_arg)) as.integer(seed_arg) else 301L
 tree <- simulate_family_tree(mu, alpha, eta, horizon, seed = seed)
+if (!legible(tree)) warning(sprintf('Seed %d is not legible at these alpha, eta', seed))
 tree$kids <- children_of(tree)
 lead      <- 1                       # min of empty axis before the first call
 tree$t    <- tree$t + lead
