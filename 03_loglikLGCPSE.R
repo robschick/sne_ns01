@@ -17,6 +17,9 @@ filename = paste0(path.loglik, datai, fiti, '_loglik.RData')
 # Load results ----
 # =============================================================================-
 
+# LL_BURN overrides the buoy's burn-in for this run only (e.g. the trace of
+# just the newest 50k of an extended chain) without editing config.R
+if (nzchar(Sys.getenv('LL_BURN'))) burn <- as.integer(Sys.getenv('LL_BURN'))
 source('src/load_fit.R')
 
 

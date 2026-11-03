@@ -18,6 +18,7 @@
 #   sbatch --export=ALL,BUOY=ns01  aci_ll.sh
 #   sbatch --export=ALL,BUOY=ns02  aci_ll.sh
 #   sbatch --export=ALL,BUOY=cox01 aci_ll.sh
+#   sbatch --export=ALL,BUOY=ns02,LL_BURN=150000 aci_ll.sh   # one-off burn override
 # =============================================================================
 
 module purge

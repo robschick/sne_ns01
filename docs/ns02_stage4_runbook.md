@@ -146,8 +146,20 @@ sbatch --dependency=afterok:LAM:NUM:RTCT --export=ALL,BUOYS=ns02 aci_sum.sh
 ```
 
 `aci_sum.sh` now stops at the first failing script (PR #29), so a `FAILED`
-state means a real failure. If an rtct resume was needed, use the resumed job's
-ID in place of the first rtct ID.
+state means a real failure.
+
+**If the rtct job fails or hits its time limit,** the summary job can never
+start: its `afterok` points at the failed job, and a dependency can't be
+repointed. Cancel it, resume rtct (A5), and resubmit the summary against the
+resumed job's ID (lam and num, already finished, are dropped from the list):
+
+```bash
+scancel <summary jobid>
+```
+
+```bash
+sbatch --dependency=afterok:<resumed rtct jobid> --export=ALL,BUOYS=ns02 aci_sum.sh
+```
 
 ## A8. When the summary job is COMPLETED
 
@@ -200,6 +212,27 @@ Check the first lines of its log for
 grep -h "resuming" out/lgcp_fit_<jobid>_lgcp_fit.log
 ```
 
-Expect about 7 days. After it finishes: loglik over 150k–200k, then
-`03_driftCheck.R --buoy=ns02` with `DRIFT_FROM=100000`. Only if a reviewer
-asks does the 200k chain go through stage 4.
+Expect about 7 days.
+
+## B3. Log-likelihood for the new 50k only
+
+Keep the 100k–150k trace first; the job overwrites the file:
+
+```bash
+cp loglik/ns02/ns02LGCPSE_loglik.RData loglik/ns02/ns02LGCPSE_loglik.100-150k.RData
+```
+
+`LL_BURN` sets the burn for this job alone, so `config.R` stays at 100000:
+
+```bash
+sbatch --export=ALL,BUOY=ns02,LL_BURN=150000 aci_ll.sh
+```
+
+The log should report 50000 iterations. Then check the parameters over the
+whole extension (compute node, as in `docs/ns02_drift_runbook.md`):
+
+```bash
+DRIFT_FROM=100000 Rscript 03_driftCheck.R --buoy=ns02
+```
+
+The 200k chain goes through stage 4 only if a reviewer asks.
