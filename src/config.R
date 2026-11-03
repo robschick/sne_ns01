@@ -47,7 +47,7 @@ buoy_settings <- list(
     noise_file = "ns02_rms_data.rds",
     sst_col = "NS02",
     deploy_time = "2021-03-10 17:29:00",
-    burn = 50000
+    burn = 100000   # 150k resume 2026-10: keep last 50k; answers/call still easing (0.564 -> 0.547, 03_driftCheck.R), noise/SST flat
   ),
   cox01 = list(
     call_file = "cox_01_all.rds",
