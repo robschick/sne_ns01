@@ -49,7 +49,10 @@ param_summary <- function(b) {
     answers  = 'Answers per call (α/η)',
     halflife = 'Answer half-life (min, ln2/η)',
     param_label(k)), '')
-  out$excl0 <- out$key %in% coefs & (out$lo > 0 | out$hi < 0)
+  # Judge on the printed (2-dp) bounds: the 2,000 thinned draws can put a
+  # borderline bound just past zero (NS01 2-mo sine, -0.004) where the full
+  # chain behind Table 3 does not, and a bold "-0.00" reads as a contradiction
+  out$excl0 <- out$key %in% coefs & (round(out$lo, 2) > 0 | round(out$hi, 2) < 0)
   list(tab = out, meta = x$meta)
 }
 
