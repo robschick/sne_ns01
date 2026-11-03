@@ -17,8 +17,8 @@ header-includes:
 something the room can picture. Suggested use for a 1–2 minute slot: **Fig 4
 then Fig 6 (NS01)**, with Fig 2 and Fig 7 held back for questions.
 
-**Numbers.** These figures use clean COX01 (Aug) and the Sep NS01/NS02 100k fits.
-NS01/NS02 may shift a little once the 150k chains finish.
+**Numbers.** These figures use the final fits: clean COX01 (Aug, 100k) and
+NS01/NS02 extended to 150k (updated 3 Nov 2026).
 
 **The one rule.** The model only ever sees calls *the detector picked up*.
 Anything about noise is about **what we detect**, not what the whales do.
@@ -34,7 +34,7 @@ a good answer must cover.
 **What it shows.** Take ten calls on a typical day. Make the ocean 5 dB
 noisier, which is about one ordinary day-to-day swing at these buoys. We then
 still detect about **5 of the 10 at COX01 and NS02, and about 3 at NS01**
-(48%, 47%, 29%).
+(48%, 49%, 29%).
 
 **How to say it.** "Noise is the single biggest thing between us and the
 calls. A noisier-than-usual day can cost us half of what's out there, and at
@@ -76,7 +76,7 @@ that quiet are left as they were.
 
 - **Dark blue:** contact calls we'd have gained.
 - **Light blue:** the answers those calls would have drawn. Each contact call
-  brings about 1.5 answers on average.
+  brings about 1.4 answers on average.
 
 **Over the season**, about half to 60% of the calls we'd hear in quiet
 conditions are missing:
@@ -85,7 +85,7 @@ conditions are missing:
 |---|---|---|
 | COX01 | ~6,100 | ~5,400 (47%) |
 | NS01 | ~13,000 | ~17,700 (58%) |
-| NS02 | ~33,600 | ~53,700 (61%) |
+| NS02 | ~33,600 | ~50,400 (60%) |
 
 At NS01 the gap piles up in the busy Jan–Feb peaks, which are also the noisy
 part of the season.
@@ -139,21 +139,21 @@ about vessels or offshore wind.
 **What it shows.**
 
 - **Left:** how long an exchange is. At every buoy, a bit over half of
-  exchanges (55%) are a single call that nobody answers. The rest run 2, 3 or
-  more calls, and the average is **2.5 calls**. The three buoys' bars are
+  exchanges (55–57%) are a single call that nobody answers. The rest run 2, 3
+  or more calls, and the average is **about 2.4 calls**. The three buoys' bars are
   nearly identical.
-- **Right:** how many exchanges start each day. About **16 at COX01, 34 at
-  NS01 and 89 at NS02**, more than five times as many at NS02 as at COX01.
+- **Right:** how many exchanges start each day. About **16 at COX01, 37 at
+  NS01 and 98 at NS02**, about six times as many at NS02 as at COX01.
 
 **How to say it.** "The whales follow the same rules everywhere. A call gets
-an answer about 60% of the time, and the urge to answer fades within a
+an answer a little under 60% of the time, and the urge to answer fades within a
 couple of minutes. NS02 isn't chattier. It just has more whales starting
 conversations."
 
 **Where the numbers come from.** Each call draws on average α/η ≈ 0.6
 answers, so the length of an exchange follows directly from that one number.
 The half-life of the urge to answer is about 2 minutes at COX01 and NS01 and
-1.4 minutes at NS02.
+1.3 minutes at NS02.
 
 ## Question to prepare: "Is an 'answer' really another whale? Couldn't it be the same whale calling again?"
 
@@ -189,7 +189,7 @@ it multiplied the rate tenfold, and 0.1× means it cut the rate to a tenth.
 - **Seasonal cycles** (daily to two-monthly rhythms) move the rate by a few-fold.
 - **Leftover** is what the model can't explain with the covariates. It gets
   bigger in Jan–Feb.
-- **Answering** is 1× on days with no calls and about 1.6× on a typical
+- **Answering** is 1× on days with no calls and about 1.5× on a typical
   calling day.
 
 **How to say it.** "Day to day, noise moves what we detect more than anything
@@ -263,10 +263,10 @@ thinking about shifting distributions.
 
 | | COX01 | NS01 | NS02 |
 |---|---|---|---|
-| Still detected after +5 dB | 48% | 29% | 47% |
+| Still detected after +5 dB | 48% | 29% | 49% |
 | One typical noise swing | 4.0 dB | 6.0 dB | 5.3 dB |
-| Calls missing on noisy days | ~5,400 (47%) | ~17,700 (58%) | ~53,700 (61%) |
-| Calls answered | 60% | 61% | 60% |
-| Calls per exchange | 2.5 | 2.6 | 2.5 |
-| Exchanges started per day | 16 | 34 | 89 |
-| Half-life of the urge to answer | 2.0 min | 1.9 min | 1.4 min |
+| Calls missing on noisy days | ~5,400 (47%) | ~17,700 (58%) | ~50,400 (60%) |
+| Calls answered | 60% | 58% | 56% |
+| Calls per exchange | 2.5 | 2.4 | 2.3 |
+| Exchanges started per day | 16 | 37 | 98 |
+| Half-life of the urge to answer | 2.0 min | 1.8 min | 1.3 min |
