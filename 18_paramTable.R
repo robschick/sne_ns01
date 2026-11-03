@@ -70,7 +70,7 @@ param_gt <- function(b) {
     tab_style(style = cell_text(weight = 'bold'),
               locations = cells_body(rows = s$tab$excl0)) |>
     tab_style(style = cell_text(weight = 'bold'), locations = cells_row_groups()) |>
-    tab_source_note(paste0('Bold: coefficient whose 95% HPD interval excludes zero ',
+    tab_source_note(paste0('Bold: coefficient whose 95% HPD interval, as printed, excludes zero ',
                            '(\u03b4, \u03b1 and \u03b7 are positive by definition).')) |>
     opt_table_font(font = google_font('Roboto')) |>
     tab_options(table.font.size = px(16), heading.title.font.size = px(22),
