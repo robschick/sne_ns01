@@ -33,7 +33,7 @@ likely to raise it. *Hit* lists what a good answer must cover.
    for Fig 3a. Caveat: the clean COX01 fit includes a 1-day harmonic, which
    the June NS01/NS02 fits don't.
 
-   **Update 3 Nov:** all three buoys are now on final fits with the 1-day
+   **Update 3 Nov:** all three buoys are now on the talk/paper fits with the 1-day
    harmonic. Background / answers for a talk Table 3: COX01 2,463 / 3,633
    (60%), NS01 5,531 / 7,483 (58%), NS02 14,856 / 18,756 (56%), from
    `fig/talk/branch_share.csv`. The cluster rebuilds `fig/combined/` from the
@@ -88,7 +88,9 @@ each exchange-starting call leads to about **2.4 calls in total**
 (1 / (1 − 0.58)), from 2.3 at NS02 to 2.5 at COX01. Use the
 branching figure: α/η is "the average number of arrows leaving each dot,"
 and the half-life is "how long the arrows usually are." Be ready for why α
-on its own (0.20–0.30 per minute) is not "responses per call."
+on its own (0.20–0.30 per minute) is not "responses per call." And 0.6
+answers per call on average is not "60% of calls get answered": with Poisson
+numbers of answers, about 44% of calls get at least one.
 
 ## 5. "So about 60% of detections are responses. Should I discount detections by 60%?"
 
@@ -132,7 +134,7 @@ abundance.
 closest to the islands). The number of calls varies about 5-fold, from 6k
 to 34k, and when calling happens is local. But the answering structure is
 the same at all three sites: 0.56–0.60 answers per call and a half-life of
-1.3–2 minutes (final fits, 3 Nov). That is the strongest
+1.3–2 minutes (150k fits, 3 Nov). That is the strongest
 single result.
 
 ## 10. "Your Q-Q plot shows misfit. Doesn't that undercut the model?"

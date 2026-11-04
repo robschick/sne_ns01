@@ -17,8 +17,10 @@ header-includes:
 something the room can picture. Suggested use for a 1–2 minute slot: **Fig 4
 then Fig 6 (NS01)**, with Fig 2 and Fig 7 held back for questions.
 
-**Numbers.** These figures use the final fits: clean COX01 (Aug, 100k) and
-NS01/NS02 extended to 150k (updated 3 Nov 2026).
+**Numbers.** These figures use the fits for the talk and paper: clean COX01
+(Aug, 100k) and NS01/NS02 extended to 150k (updated 3 Nov 2026). NS02's answers
+per call is still easing slowly (about 0.56 and drifting down by about 0.01),
+and a 200k run will check it.
 
 **The one rule.** The model only ever sees calls *the detector picked up*.
 Anything about noise is about **what we detect**, not what the whales do.
@@ -145,9 +147,9 @@ about vessels or offshore wind.
 - **Right:** how many exchanges start each day. About **16 at COX01, 37 at
   NS01 and 98 at NS02**, about six times as many at NS02 as at COX01.
 
-**How to say it.** "The whales follow the same rules everywhere. A call gets
-an answer a little under 60% of the time, and the urge to answer fades within a
-couple of minutes. NS02 isn't chattier. It just has more whales starting
+**How to say it.** "The whales follow the same rules everywhere. Each call
+draws a little under 0.6 answers on average, so a bit under half of calls get
+any answer at all, and the urge to answer fades within a couple of minutes. NS02 isn't chattier. It just has more whales starting
 conversations."
 
 **Where the numbers come from.** Each call draws on average α/η ≈ 0.6
@@ -266,7 +268,7 @@ thinking about shifting distributions.
 | Still detected after +5 dB | 48% | 29% | 49% |
 | One typical noise swing | 4.0 dB | 6.0 dB | 5.3 dB |
 | Calls missing on noisy days | ~5,400 (47%) | ~17,700 (58%) | ~50,400 (60%) |
-| Calls answered | 60% | 58% | 56% |
+| Share of calls that are answers | 60% | 58% | 56% |
 | Calls per exchange | 2.5 | 2.4 | 2.3 |
 | Exchanges started per day | 16 | 37 | 98 |
 | Half-life of the urge to answer | 2.0 min | 1.8 min | 1.3 min |
