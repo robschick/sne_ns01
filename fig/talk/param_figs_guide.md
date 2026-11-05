@@ -64,7 +64,9 @@ everywhere.
 - In power terms, +3 dB doubles the sound energy, so +5 dB is about 3×.
 - Why NS01 is more sensitive: **we don't know yet**. Possible reasons are
   different noise sources (vessels vs weather), how sound travels at that
-  site, or how far the detector can hear. Don't guess on stage. Say it's on
+  site, or how far the detector can hear. NS01 does have the most AIS-tracked
+  traffic of the three (see the vessel traffic backup), but that link is
+  untested. Don't guess on stage. Say it's on
   the list.
 
 # Fig 6 — Calls missing on noisy days
@@ -261,6 +263,50 @@ thinking about shifting distributions.
   and season don't move together.
 - Same caveat as noise: these are associations in detections, not causes.
 
+# Vessel traffic at the buoys (backup)
+
+![](../context/ais/buoy_table_simple.png){width=80%}
+
+![](../context/ais/ais_map.png){width=95%}
+
+Also: `fig/context/ais/weekly_panel.png` (weekly traffic, both winters),
+`ais_map_diff.png` (2021–22 minus 2020–21) and `buoy_table.png` (both winters
+with the change). Numbers, caveats and what's deferred:
+`docs/ais_context_followup.md`.
+
+**What it shows.** AIS-tracked vessel traffic within 10 km of each hydrophone,
+October 2021 – February 2022, in mean vessel-hours per day: **COX01 2.4, NS01
+8.3, NS02 1.4**. NS01 is the busiest, and most of its traffic is seismic /
+survey-type vessels (3.9 a day) and fishing (3.1). Cargo and tankers are
+almost absent at all three: big ships use the east–west lane well south of the
+buoys. The map shows where the lanes, ferry routes and lease areas sit.
+
+**How to say it.** "These sites aren't next to the shipping lanes. The busiest
+is NS01, at about eight vessel-hours a day, much of it survey-type vessels.
+That's AIS-tracked traffic, not noise. Noise is what the hydrophone measured."
+
+## Question to prepare: "Is shipping, or wind-farm survey work, driving what you hear?"
+
+*Who's asking:* offshore wind developers and regulators, conservation groups,
+fishermen.
+
+*Hit:*
+
+- **Traffic near the buoys is light.** Under about 8 vessel-hours a day even at
+  NS01, and almost no cargo or tankers within 10 km.
+- **NS01 does stand out.** It is the busiest site, with the most survey-type
+  traffic (about 6× the prior winter), and it is also the site most sensitive
+  to noise (Fig 4). We haven't tested whether those are linked. Comparing
+  traffic with the recorded noise is the next step.
+- **The prior winter isn't a clean baseline.** COX01 was *busier* in fall 2020,
+  mostly from one seismic-type vessel. One earlier winter can't separate a wind
+  effect from ordinary year-to-year change, and 2020 may still carry COVID
+  shipping effects.
+- **What AIS misses.** Most small boats don't carry AIS, and the vessel groups
+  come from broadcast type codes, not identification.
+- The model uses recorded noise, not traffic, so vessels enter only through
+  the noise they make. No causal claim either way.
+
 # Quick reference
 
 | | COX01 | NS01 | NS02 |
@@ -272,3 +318,4 @@ thinking about shifting distributions.
 | Calls per exchange | 2.5 | 2.4 | 2.3 |
 | Exchanges started per day | 16 | 37 | 98 |
 | Half-life of the urge to answer | 2.0 min | 1.8 min | 1.3 min |
+| AIS vessel-hours per day within 10 km | 2.4 | 8.3 | 1.4 |
