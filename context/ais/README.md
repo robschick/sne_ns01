@@ -17,6 +17,13 @@ Rscript context/ais/01_download.R
 
 Responses are cached in `cache/` (gitignored). Reruns only fetch what's missing.
 
+Summaries live in `R/summary.R` (`buoy_table()`: per-buoy mean vessel-hours
+and vessels per day by group, both winters, and their ratio). Tests:
+
+```sh
+Rscript -e 'testthat::test_dir("context/ais/tests")'
+```
+
 ## Data sources and attribution
 
 - **Global Fishing Watch**, AIS vessel presence (`public-global-presence`,
