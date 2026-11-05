@@ -79,3 +79,51 @@ test_that('buoys come back west to east and groups in slide order, Total last', 
                c('Cargo & tanker', 'Passenger', 'Fishing', 'Seismic / survey',
                  'Support & other', 'Total'))
 })
+
+# --- weekly_series() ---------------------------------------------------------
+
+week_of <- function(ws, week, season = 'analysis', buoy = 'NS01')
+  ws[ws$buoy == buoy & ws$season == season & ws$week == week, ]
+
+test_that('week 1 is Oct 1-7 in both seasons; Oct 8 starts week 2', {
+  rows <- rbind(pres(date = '2021-10-01', hours = 7),
+                pres(date = '2021-10-07', hours = 7),
+                pres(date = '2021-10-08', hours = 70),
+                pres(season = 'baseline', date = '2020-10-01', hours = 14),
+                pres(season = 'baseline', date = '2020-10-08', hours = 70))
+  ws <- weekly_series(rows)
+  expect_equal(week_of(ws, 1)$hours, 2)
+  expect_equal(week_of(ws, 2)$hours, 10)
+  expect_equal(week_of(ws, 1, 'baseline')$hours, 2)
+  expect_equal(week_of(ws, 2, 'baseline')$hours, 10)
+})
+
+test_that('the final week is Feb 25-28 and divides by its 4 days, not 7', {
+  rows <- rbind(pres(date = '2022-02-24', hours = 70),
+                pres(date = '2022-02-25', hours = 8),
+                pres(date = '2022-02-28', hours = 4))
+  ws <- weekly_series(rows)
+  expect_equal(max(ws$week[ws$season == 'analysis']), 22)
+  expect_equal(week_of(ws, 21)$hours, 10)
+  expect_equal(week_of(ws, 22)$hours, 3)
+})
+
+test_that('smooth is the centered 3-week mean of the weekly values in the interior', {
+  rows <- rbind(pres(date = '2021-10-22', hours = 21),   # week 4: 3/day
+                pres(date = '2021-10-29', hours = 42))   # week 5: 6/day
+  ws <- weekly_series(rows)
+  expect_equal(week_of(ws, 4)$smooth, 3)   # (0 + 3 + 6) / 3
+  expect_equal(week_of(ws, 5)$smooth, 3)   # (3 + 6 + 0) / 3
+  expect_equal(week_of(ws, 6)$smooth, 2)   # (6 + 0 + 0) / 3
+})
+
+test_that('at the first and last week smooth averages only the neighbors that exist', {
+  rows <- rbind(pres(date = '2021-10-01', hours = 14),   # week 1: 2/day
+                pres(date = '2021-10-08', hours = 28),   # week 2: 4/day
+                pres(date = '2022-02-18', hours = 7),    # week 21: 1/day
+                pres(date = '2022-02-25', hours = 12))   # week 22: 3/day (4 days)
+  ws <- weekly_series(rows)
+  expect_equal(week_of(ws, 1)$smooth, 3)    # (2 + 4) / 2
+  expect_equal(week_of(ws, 22)$smooth, 2)   # (1 + 3) / 2
+  expect_false(anyNA(ws$smooth))
+})

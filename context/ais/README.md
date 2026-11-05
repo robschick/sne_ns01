@@ -21,7 +21,9 @@ Rscript context/ais/02_table.R      # slide tables -> fig/context/ais/buoy_table
 Responses are cached in `cache/` (gitignored). Reruns only fetch what's missing.
 
 Summaries live in `R/summary.R` (`buoy_table()`: per-buoy mean vessel-hours
-and vessels per day by group, both winters, and their ratio). Tests:
+and vessels per day by group, both winters, and their ratio; `weekly_series()`:
+total vessel-hours per day by week-of-season, with a 3-week rolling mean).
+Tests:
 
 ```sh
 Rscript -e 'testthat::test_dir("context/ais/tests")'
