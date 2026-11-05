@@ -12,8 +12,11 @@ Spec and build plan: `docs/ais_context_spec.md`.
 From the repo root, with `GFW_TOKEN` set in `~/.Renviron`:
 
 ```sh
-Rscript context/ais/01_download.R
+Rscript context/ais/01_download.R   # GFW requests -> cache/
+Rscript context/ais/02_table.R      # slide table -> fig/context/ais/buoy_table.{rds,html,png}
 ```
+
+`buoy_table.{csv,parquet}` here are the committed numbers behind the slide table.
 
 Responses are cached in `cache/` (gitignored). Reruns only fetch what's missing.
 
