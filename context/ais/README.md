@@ -16,6 +16,7 @@ Rscript context/ais/01_download.R   # GFW requests -> cache/
 Rscript context/ais/02_table.R      # slide tables -> fig/context/ais/buoy_table{,_simple}.{rds,html,png}
 Rscript context/ais/03_weekly.R     # weekly panel -> fig/context/ais/weekly_panel.{png,pdf}
 Rscript context/ais/04_map.R        # transit maps -> fig/context/ais/ais_map{,_diff}.{png,pdf}
+Rscript context/ais/05_vessel_ids.R # names the seismic-type vessels -> vessel_ids.csv
 ```
 
 `buoy_table.{csv,parquet}` here are the committed numbers behind the slide table.
@@ -44,3 +45,6 @@ Rscript -e 'testthat::test_dir("context/ais/tests")'
   are transits (tracks crossing a cell), not vessel-hours. Credit: "Northeast
   Regional Ocean Council (NROC). Northeast Ocean Data Portal,
   www.northeastoceandata.org." Not for navigation.
+- **MarineCadastre**, raw AIS points (USCG Nationwide AIS), daily national
+  files for seven sampled days (cached in `cache/mc/`, ~2 GB). Public domain;
+  used only to name vessels (`vessel_ids.csv`). Not for navigation.
