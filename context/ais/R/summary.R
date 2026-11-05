@@ -58,3 +58,35 @@ buoy_table <- function(rows, groups = vessel_groups, seasons = ais_seasons) {
   out$ratio <- ifelse(out$hours_baseline > 0, out$hours_analysis / out$hours_baseline, NA)
   out
 }
+
+# Centered 3-point mean; at each end, the mean of the two points that exist.
+rolling_mean3 <- function(x) {
+  n <- length(x)
+  sapply(seq_len(n), \(i) mean(x[max(1, i - 1):min(n, i + 1)]))
+}
+
+# Per buoy x season x week-of-season (week 1 starts on the season's first day,
+# Oct 1 in both winters): mean vessel-hours per day within the week, all vessel
+# types (the Total). The last week is short (4 days for a 151-day season) and
+# divides by its own length, so it's comparable. smooth = centered 3-week
+# rolling mean of hours; the first and last weeks average the two weeks that
+# exist, so the line spans the season. Columns: buoy, season, week, hours,
+# smooth.
+weekly_series <- function(rows, seasons = ais_seasons) {
+  buoys <- c(intersect(buoy_order, rows$buoy), setdiff(unique(rows$buoy), buoy_order))
+  out <- list()
+  for (s in names(seasons)) {
+    r <- rows[rows$season == s & rows$date >= seasons[[s]][1] & rows$date < seasons[[s]][2], ]
+    n_days  <- season_days(seasons[[s]])
+    n_weeks <- ceiling(n_days / 7)
+    week_days <- pmin(7, n_days - 7 * (seq_len(n_weeks) - 1))
+    week <- as.numeric(r$date - seasons[[s]][1]) %/% 7 + 1
+    grid <- data.frame(buoy = rep(buoys, each = n_weeks), season = s,
+                       week = rep(seq_len(n_weeks), times = length(buoys)))
+    tot <- as.vector(tapply(r$hours, paste(r$buoy, week), sum)[paste(grid$buoy, grid$week)])
+    grid$hours <- ifelse(is.na(tot), 0, tot) / week_days[grid$week]
+    grid$smooth <- ave(grid$hours, grid$buoy, FUN = rolling_mean3)
+    out[[s]] <- grid
+  }
+  do.call(rbind, unname(out))
+}
