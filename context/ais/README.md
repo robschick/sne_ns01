@@ -14,6 +14,7 @@ From the repo root, with `GFW_TOKEN` set in `~/.Renviron`:
 ```sh
 Rscript context/ais/01_download.R   # GFW requests -> cache/
 Rscript context/ais/02_table.R      # slide tables -> fig/context/ais/buoy_table{,_simple}.{rds,html,png}
+Rscript context/ais/03_weekly.R     # weekly panel -> fig/context/ais/weekly_panel.{png,pdf}
 ```
 
 `buoy_table.{csv,parquet}` here are the committed numbers behind the slide table.
