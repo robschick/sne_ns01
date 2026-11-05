@@ -127,3 +127,11 @@ test_that('at the first and last week smooth averages only the neighbors that ex
   expect_equal(week_of(ws, 22)$smooth, 2)   # (1 + 3) / 2
   expect_false(anyNA(ws$smooth))
 })
+
+test_that('every buoy gets a full season of weeks, even one with no traffic at all', {
+  ws <- weekly_series(pres(buoy = 'NS01'))
+  expect_equal(unique(ws$buoy), c('COX01', 'NS01', 'NS02'))
+  ns02 <- ws[ws$buoy == 'NS02' & ws$season == 'analysis', ]
+  expect_equal(ns02$week, 1:22)
+  expect_true(all(ns02$hours == 0 & ns02$smooth == 0))
+})
