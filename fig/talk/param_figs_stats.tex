@@ -25,7 +25,7 @@
 \title{From fitted Hawkes parameters to interpretable quantities:\\
 noise, missing calls and the drivers of the call rate}
 \author{Rob Schick\\[2pt]\small Draft for discussion, not for circulation}
-\date{28 October 2026}
+\date{3 November 2026}
 
 \begin{document}
 \maketitle
@@ -49,9 +49,10 @@ attribution of the seasonal trend.
 \paragraph{Status of the fits.}
 COX01 is the clean-data refit (100k iterations, burn-in 75k). NS01 is the
 chain extended to 150k with burn-in 100k; its $-2\log L$ trace is flat over
-the retained draws. NS02 is still the 100k chain with burn-in 50k. That chain
-had not converged, and a 150k extension is running, so the NS02 numbers below
-are provisional. Every functional is computed from 2{,}000 equally spaced
+the retained draws. NS02 is likewise extended to 150k with burn-in 100k. Its
+covariate effects are stable over the retained draws, but its expected answers
+per call is still easing slowly (block means 0.564 to 0.547), well within its
+interval; a 200k extension will follow. Every functional is computed from 2{,}000 equally spaced
 post-burn-in draws.
 
 \section{Model}\label{sec:model}
@@ -101,7 +102,7 @@ calls in a set $A$ is
 \E N(A)\approx\frac{1}{1-m}\int_A\mu(t)\,dt.
 \end{equation}
 Over the whole window the posterior median of~\eqref{eq:EN} is $6{,}086$,
-$13{,}014$ and $33{,}589$, against observed counts of $6{,}098$, $13{,}017$
+$13{,}014$ and $33{,}620$, against observed counts of $6{,}098$, $13{,}017$
 and $33{,}611$. That agreement is a property of a well-mixed fit, not
 evidence for the noise model, but it confirms the functionals below are on
 the right scale. Table~\ref{tab:params} gives the parameter summaries.
@@ -110,20 +111,20 @@ the right scale. Table~\ref{tab:params} gives the parameter summaries.
 \centering\small
 \caption{Posterior medians (95\% equal-tailed intervals) of the parameters
 used below. $\beta_n$ and $\beta_s$ are coefficients on the standardized
-noise and SST covariates. NS02 is provisional.}
+noise and SST covariates.}
 \label{tab:params}
 \begin{tabular}{lccc}
 \toprule
 & COX01 & NS01 & NS02 \\
 \midrule
-$\alpha$ & 0.203 (0.185, 0.223) & 0.223 (0.209, 0.238) & 0.294 (0.283, 0.305)\\
-$\eta$ (min$^{-1}$) & 0.340 (0.308, 0.379) & 0.386 (0.361, 0.419) & 0.494 (0.453, 0.527)\\
-$m=\alpha/\eta$ & 0.594 (0.561, 0.634) & 0.576 (0.546, 0.604) & 0.596 (0.567, 0.641)\\
-$1/(1-m)$ & 2.47 (2.28, 2.73) & 2.36 (2.20, 2.53) & 2.47 (2.31, 2.79)\\
-$\log2/\eta$ (min) & 2.04 (1.83, 2.25) & 1.79 (1.66, 1.92) & 1.40 (1.32, 1.53)\\
-$\delta$ & 2.03 (1.89, 2.15) & 1.81 (1.73, 1.90) & 1.60 (1.54, 1.66)\\
-$\beta_n$ & $-0.590$ ($-0.705$, $-0.466$) & $-1.477$ ($-1.628$, $-1.333$) & $-0.796$ ($-0.889$, $-0.727$)\\
-$\beta_s$ & $-2.84$ ($-3.12$, $-2.54$) & $-1.76$ ($-1.97$, $-1.62$) & $-1.39$ ($-1.49$, $-1.31$)\\
+$\alpha$ & 0.203 (0.185, 0.223) & 0.223 (0.209, 0.238) & 0.297 (0.285, 0.308)\\
+$\eta$ (min$^{-1}$) & 0.340 (0.308, 0.379) & 0.386 (0.361, 0.419) & 0.531 (0.508, 0.556)\\
+$m=\alpha/\eta$ & 0.594 (0.561, 0.634) & 0.576 (0.546, 0.604) & 0.559 (0.537, 0.576)\\
+$1/(1-m)$ & 2.47 (2.28, 2.73) & 2.36 (2.20, 2.53) & 2.27 (2.16, 2.36)\\
+$\log2/\eta$ (min) & 2.04 (1.83, 2.25) & 1.79 (1.66, 1.92) & 1.31 (1.25, 1.37)\\
+$\delta$ & 2.03 (1.89, 2.15) & 1.81 (1.73, 1.90) & 1.68 (1.62, 1.75)\\
+$\beta_n$ & $-0.590$ ($-0.705$, $-0.466$) & $-1.477$ ($-1.628$, $-1.333$) & $-0.766$ ($-0.823$, $-0.709$)\\
+$\beta_s$ & $-2.84$ ($-3.12$, $-2.54$) & $-1.76$ ($-1.97$, $-1.62$) & $-1.37$ ($-1.44$, $-1.30$)\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -170,7 +171,7 @@ in log-rate per dB. $R(\Delta)$ is the multiplicative effect of $+\Delta$\dB.}
 \midrule
 COX01 & 4.00 & $-0.148$ ($-0.176$, $-0.117$) & 0.863 (0.839, 0.890) & 0.478 (0.415, 0.558)\\
 NS01 & 6.02 & $-0.245$ ($-0.271$, $-0.221$) & 0.782 (0.763, 0.801) & 0.293 (0.259, 0.331)\\
-NS02 & 5.30 & $-0.150$ ($-0.168$, $-0.137$) & 0.861 (0.846, 0.872) & 0.472 (0.433, 0.504)\\
+NS02 & 5.30 & $-0.144$ ($-0.155$, $-0.134$) & 0.866 (0.856, 0.875) & 0.486 (0.460, 0.513)\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -308,7 +309,7 @@ posterior medians. Noise levels are on the knots.}
 \midrule
 COX01 & 72.9 / 77.6 & 6{,}086 (5{,}737, 6{,}466) & 11{,}456 (9{,}830, 13{,}119) & 5{,}357 (3{,}856, 6{,}933) & 47\%\\
 NS01 & 77.6 / 84.2 & 13{,}014 (12{,}477, 13{,}541) & 30{,}738 (27{,}494, 34{,}533) & 17{,}733 (14{,}698, 21{,}304) & 58\%\\
-NS02 & 76.8 / 82.5 & 33{,}589 (32{,}749, 34{,}552) & 87{,}399 (79{,}577, 98{,}646) & 53{,}667 (46{,}244, 64{,}916) & 61\%\\
+NS02 & 76.8 / 82.5 & 33{,}620 (32{,}793, 34{,}412) & 84{,}039 (77{,}947, 90{,}519) & 50{,}397 (44{,}537, 56{,}684) & 60\%\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -446,8 +447,7 @@ A(d)=\frac{\sum_{s\in d}\{\mu(s)+\phi(s)\}}{\sum_{s\in d}\mu(s)},\qquad
 \]
 on a 5-min grid, using the observed calls and plug-in posterior medians. It
 is left uncentered, so $A=1$ on call-free days. Its geometric mean over days
-is 1.48 (COX01), 1.57 (NS01) and 2.11 (NS02). For NS01, $\mu$, $\alpha$ and
-$\eta$ in this panel still come from the 100k fit; that will be updated.
+is 1.48 (COX01), 1.50 (NS01) and 1.95 (NS02).
 
 \begin{figure}[H]
 \centering
@@ -477,7 +477,7 @@ means and at the 20-min knots. Plug-in posterior medians.}
 \midrule
 COX01 ($\Var S=9.84$) & $-0.02$ & 0.79 & 0.18 & 0.06 & 0.00 & 0.62 & 0.15 & 0.22\\
 NS01 ($\Var S=6.90$) & 0.29 & 0.50 & 0.08 & 0.14 & 0.29 & 0.37 & 0.06 & 0.29\\
-NS02 ($\Var S=2.71$) & $-0.07$ & 0.49 & 0.14 & 0.44 & 0.02 & 0.28 & 0.10 & 0.60\\
+NS02 ($\Var S=2.94$) & $-0.06$ & 0.45 & 0.16 & 0.45 & 0.02 & 0.25 & 0.11 & 0.63\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -490,15 +490,15 @@ What Table~\ref{tab:var} shows:
   the SD of daily-mean $L$ is 4.9\dB, against 2.0\dB\ at COX01 and 3.7\dB\ at
   NS02.
 \item At COX01 and NS02 the noise contribution is negatively correlated with
-  the rest of the background ($-0.33$ and $-0.48$ at daily means; $-0.15$ and
-  $-0.30$ at knots). That cancels most of its own variance, so its share is
+  the rest of the background ($-0.33$ and $-0.46$ at daily means; $-0.15$ and
+  $-0.28$ at knots). That cancels most of its own variance, so its share is
   near zero at both scales, not just day to day.
 \item At NS02, daily noise and SST contributions correlate at $-0.74$. Both
   coefficients are negative, so louder days fall later in the season, as
   winter storms build while whales arrive. Much of the variation that
   identifies $\beta_n$ there is sub-seasonal, and the split between
   noise and season is weakly identified.
-\item The GP share at NS02 (0.44 daily, 0.60 at knots) says there is a lot of
+\item The GP share at NS02 (0.45 daily, 0.63 at knots) says there is a lot of
   residual structure on scales the covariates don't reach. We read it as a
   goodness-of-fit diagnostic as much as a driver.
 \end{itemize}
@@ -533,8 +533,9 @@ is order-invariant, as an alternative to covariance shares.
 \item Is the capped-noise expected count the right estimand for ``calls
   lost to noise''? Or is the average marginal effect in calls per dB cleaner,
   since it avoids choosing a reference level?
-\item NS01's $\eta$ drifted across the first 100k iterations, with a matching
-  shift between the GP background and the excitation. That is the usual
+\item $\eta$ drifted across the first 100k iterations at NS01, and is still
+  rising slowly at NS02 over 100k--150k, with a matching shift between the GP
+  background and the excitation. That is the usual
   clustering-versus-contagion trade-off. Would a reparameterization in
   $(m,\eta)$, or a prior on $\delta$, reduce it?
 \end{enumerate}
@@ -551,7 +552,7 @@ is order-invariant, as an alternative to covariance shares.
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{rate_drivers_ns02.pdf}
-\caption{NS02 (provisional fit).}
+\caption{NS02.}
 \end{figure}
 
 \raggedright

@@ -31,8 +31,13 @@ likely to raise it. *Hit* lists what a good answer must cover.
    "the same answering at all three sites" holds. Fig 4a already uses the
    clean fit. Replace the COX01 column in Table 3 and use `fig/cox01/XB.pdf`
    for Fig 3a. Caveat: the clean COX01 fit includes a 1-day harmonic, which
-   the June NS01/NS02 fits don't (the September NS01 refit has it and gives
-   nearly the same counts: 5,066 and 7,947).
+   the June NS01/NS02 fits don't.
+
+   **Update 3 Nov:** all three buoys are now on the talk/paper fits with the 1-day
+   harmonic. Background / answers for a talk Table 3: COX01 2,463 / 3,633
+   (60%), NS01 5,531 / 7,483 (58%), NS02 14,856 / 18,756 (56%), from
+   `fig/talk/branch_share.csv`. The cluster rebuilds `fig/combined/` from the
+   same fits when NS02's summaries finish.
 2. **The dawn sentence under Fig 6.** The gap ends stay fixed at about 05:00
    UTC all season while dawn moves by an hour. 05:00 UTC is local midnight,
    which points to daily file rollover, not dawn. Cut the claim, or say a
@@ -77,14 +82,17 @@ about 17.
 
 *Who's asking:* biologists, quantitative ecologists.
 
-*Hit:* α/η is the average number of answers each call triggers: about 0.6.
-The half-life (ln 2 / η) is about 1.5–2 minutes. So each exchange-starting
-call leads to about **2.5 calls in total** (1 / (1 − 0.6)). Use the
+*Hit:* α/η is the average number of answers each call triggers: 0.56–0.60,
+so a little under 0.6. The half-life (ln 2 / η) is about 1.3–2 minutes. So
+each exchange-starting call leads to about **2.4 calls in total**
+(1 / (1 − 0.58)), from 2.3 at NS02 to 2.5 at COX01. Use the
 branching figure: α/η is "the average number of arrows leaving each dot,"
 and the half-life is "how long the arrows usually are." Be ready for why α
-on its own (0.16–0.30 per minute) is not "responses per call."
+on its own (0.20–0.30 per minute) is not "responses per call." And 0.6
+answers per call on average is not "60% of calls get answered": with Poisson
+numbers of answers, about 44% of calls get at least one.
 
-## 5. "So 60% of detections are responses. Should I discount detections by 60%?"
+## 5. "So about 60% of detections are responses. Should I discount detections by 60%?"
 
 *Who's asking:* managers (they will see Table 3).
 
@@ -125,8 +133,8 @@ abundance.
 *Hit:* Explain the spatial gradient in Fig 3 (what lies along it; COX01 is
 closest to the islands). The number of calls varies about 5-fold, from 6k
 to 34k, and when calling happens is local. But the answering structure is
-the same at all three sites: about 0.6 answers per call and a half-life of
-1.4–2 minutes (confirmed with the clean COX01 fit). That is the strongest
+the same at all three sites: 0.56–0.60 answers per call and a half-life of
+1.3–2 minutes (150k fits, 3 Nov). That is the strongest
 single result.
 
 ## 10. "Your Q-Q plot shows misfit. Doesn't that undercut the model?"
