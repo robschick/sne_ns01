@@ -8,7 +8,11 @@
 # every day of each window (~180 files, ~300 MB each), this samples the days
 # when GFW had each flag inside the circle longest, keeps the points within
 # 10 km, and summarizes them per vessel. The MMSI's first three digits (MID)
-# give the flag, to match against GFW's.
+# give the flag, to match against GFW's. hour_bins = clock hours (UTC) with at
+# least one point inside the circle, not time spent inside it.
+#
+# This names the vessel on the sampled days only; other days of each window are
+# attributed by flag, not checked.
 #
 # Usage:   Rscript context/ais/05_vessel_ids.R      (from the repo root)
 # Input:   data/release/sites.parquet; MarineCadastre daily zips (cached in
@@ -79,7 +83,7 @@ out <- rbindlist(lapply(seq_len(nrow(samples)), function(i) {
   x[, hour := substr(BaseDateTime, 1, 13)]
   x[, .(vessel_name = mode_of(VesselName), imo = mode_of(IMO), call_sign = mode_of(CallSign),
         ais_type = mode_of(VesselType), length_m = mode_of(Length),
-        hours_present = uniqueN(hour), points = .N,
+        hour_bins = uniqueN(hour), points = .N,
         first = min(BaseDateTime), last = max(BaseDateTime)),
     by = .(mmsi = MMSI)][
     , `:=`(buoy = smp$buoy, date = smp$date, gfw_flag = smp$gfw_flag,
@@ -87,11 +91,11 @@ out <- rbindlist(lapply(seq_len(nrow(samples)), function(i) {
 }))
 
 setcolorder(out, c('buoy', 'date', 'gfw_flag', 'mmsi', 'mid_flag', 'vessel_name', 'imo',
-                   'call_sign', 'ais_type', 'length_m', 'hours_present', 'points', 'first', 'last'))
-setorder(out, buoy, date, -hours_present)
+                   'call_sign', 'ais_type', 'length_m', 'hour_bins', 'points', 'first', 'last'))
+setorder(out, buoy, date, -hour_bins)
 fwrite(out, 'context/ais/vessel_ids.csv')
 cat('Wrote context/ais/vessel_ids.csv\n')
 
 # The candidates: vessels whose MMSI flag matches the flag GFW reported.
 print(out[mid_flag == gfw_flag, .(buoy, date, gfw_flag, mmsi, vessel_name, imo, call_sign,
-                                  ais_type, length_m, hours_present)])
+                                  ais_type, length_m, hour_bins)])

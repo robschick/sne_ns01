@@ -21,7 +21,8 @@ Mean AIS vessel-hours per day within 10 km (GFW; `context/ais/buoy_table.csv`):
 - **COX01 was much busier in the prior winter**: ~50 vessel-hours/day in early
   October 2020, down to the 2021–22 level by late November. Most of it is one
   Netherlands-flagged seismic-type vessel (783 h over 39 days, Oct 1 –
-  Nov 18, 2020) — the survey vessel DEEP HELDER (below) — plus fishing.
+  Nov 18, 2020) — on both days sampled, the survey vessel DEEP HELDER
+  (below) — plus fishing.
 - **NS02 is quiet** (~1 vessel-hour/day, mostly fishing).
 - **Cargo and tankers are almost absent** within 10 km of every buoy
   (≤ 0.02 vessel-hours/day). Large ships use the east–west lane at ~40.55° N,
@@ -37,7 +38,7 @@ GFW's seismic-type hours, named from MarineCadastre raw AIS (USCG) on the
 days each flag was inside the circle longest (`context/ais/05_vessel_ids.R`,
 output `context/ais/vessel_ids.csv`). Each matches a published survey notice.
 
-| Buoy | Vessel | Flag | MMSI | IMO | Days sampled (h in circle) | Work |
+| Buoy | Vessel | Flag | MMSI | IMO | Days sampled (clock hours with a point in the circle) | Work |
 |---|---|---|---|---|---|---|
 | COX01 | DEEP HELDER | NLD | 244780813 | 9690872 | 2020-10-04 (24), 10-26 (24) | MMT geophysical seabed survey, Revolution Wind / South Fork sites (from June 2020) |
 | NS01 | MINERVA UNO | MHL | 538009086 | 9262077 | 2021-10-21 (24), 12-29 (17), 2022-01-27 (9) | Geophysical survey, northern Vineyard Wind lease (OCS-A 0501) and cable corridors, ~2021-06-28 to early June 2022 |
@@ -51,8 +52,13 @@ output `context/ais/vessel_ids.csv`). Each matches a published survey notice.
 - Also inside COX01's circle on 2020-10-04 for 24 h: HORIZON GEOBAY (PAN,
   AIS type 95, 86 m), another geophysical survey vessel. GFW has no PAN
   seismic-type hours at COX01 that winter, so it sits in another GFW group.
-- So the "Seismic / survey" hours at both busy sites are **offshore-wind site
-  surveys** (high-resolution geophysical), not oil-and-gas airgun seismic.
+- On every sampled day, the seismic-type vessel at both busy sites was an
+  **offshore-wind site survey vessel** (high-resolution geophysical), not
+  oil-and-gas airgun seismic. The other days of each window are attributed
+  by flag only: one vessel per flag per day in GFW, the same MMSI on every
+  sampled day, and published survey windows that cover the period make it
+  likely, but each day wasn't checked. Checking them all would mean ~125
+  more daily files (~35 GB).
 
 Sources: MarineTraffic / registry entries for MMSI 244780813; offshorewind.biz,
 2020-06-30 and 2020-11-23 (DEEP HELDER at Revolution Wind / South Fork);

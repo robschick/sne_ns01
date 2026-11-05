@@ -1,4 +1,4 @@
-buoy,date,gfw_flag,mmsi,mid_flag,vessel_name,imo,call_sign,ais_type,length_m,hours_present,points,first,last
+buoy,date,gfw_flag,mmsi,mid_flag,vessel_name,imo,call_sign,ais_type,length_m,hour_bins,points,first,last
 COX01,2020-10-04,NLD,244780813,NLD,,,,,,24,1044,2020-10-04T00:00:03Z,2020-10-04T23:59:25Z
 COX01,2020-10-04,NLD,354641000,PAN,HORIZON GEOBAY,IMO7801556,3ETG2,95,86,24,873,2020-10-04T00:00:06Z,2020-10-04T23:59:47Z
 COX01,2020-10-04,NLD,367717050,USA,PROVIDER,IMO7939353,WDI6280,30,23,23,866,2020-10-04T00:00:15Z,2020-10-04T22:55:56Z
