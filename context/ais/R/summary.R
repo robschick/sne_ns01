@@ -73,7 +73,7 @@ rolling_mean3 <- function(x) {
 # exist, so the line spans the season. Columns: buoy, season, week, hours,
 # smooth.
 weekly_series <- function(rows, seasons = ais_seasons) {
-  buoys <- c(intersect(buoy_order, rows$buoy), setdiff(unique(rows$buoy), buoy_order))
+  buoys <- c(buoy_order, setdiff(unique(rows$buoy), buoy_order))   # all buoys, even traffic-free
   out <- list()
   for (s in names(seasons)) {
     r <- rows[rows$season == s & rows$date >= seasons[[s]][1] & rows$date < seasons[[s]][2], ]
