@@ -93,9 +93,13 @@ cat(sprintf('Transits summed over the region: 2021–22 %s, 2020–21 %s (cells 
             format(global(prior, 'sum')[[1]], big.mark = ','),
             global(now > 0, 'sum')[[1]], global(prior > 0, 'sum')[[1]]))
 
-# 200 m cells for drawing, keeping each block's max so single tracks stay visible.
+# 200 m cells for drawing, keeping each block's largest-magnitude value (with
+# its sign, for the difference) so single tracks stay visible and a small
+# increase can't hide a larger decrease.
 as_cells <- function(r) {
-  d <- as.data.frame(aggregate(r, 2, 'max'), xy = TRUE)
+  hi <- aggregate(r, 2, 'max')
+  lo <- aggregate(r, 2, 'min')
+  d <- as.data.frame(ifel(abs(lo) > abs(hi), lo, hi), xy = TRUE)
   names(d)[3] <- 'value'
   d
 }
