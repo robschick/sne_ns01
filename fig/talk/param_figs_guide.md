@@ -305,7 +305,8 @@ fishermen.
   South Fork sites. These are high-resolution geophysical surveys, not
   oil-and-gas airgun seismic.
 - **The prior winter isn't a clean baseline.** COX01 was *busier* in fall 2020,
-  mostly from one survey vessel. One earlier winter can't separate a wind
+  mostly from Dutch-flagged survey-type traffic (DEEP HELDER on the days we
+  checked). One earlier winter can't separate a wind
   effect from ordinary year-to-year change, and 2020 may still carry COVID
   shipping effects.
 - **What AIS misses.** Most small boats don't carry AIS, and the vessel groups

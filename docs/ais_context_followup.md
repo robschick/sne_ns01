@@ -19,10 +19,10 @@ Mean AIS vessel-hours per day within 10 km (GFW; `context/ais/buoy_table.csv`):
   vessels lead (3.9 vessel-hours/day, ~6× the prior winter). On the transit map,
   a regular grid of tracks just west of NS01 in 2021–22 looks like survey lines.
 - **COX01 was much busier in the prior winter**: ~50 vessel-hours/day in early
-  October 2020, down to the 2021–22 level by late November. Most of it is one
-  Netherlands-flagged seismic-type vessel (783 h over 39 days, Oct 1 –
-  Nov 18, 2020) — on both days sampled, the survey vessel DEEP HELDER
-  (below) — plus fishing.
+  October 2020, down to the 2021–22 level by late November. Most of it is
+  Netherlands-flagged seismic-type traffic (783 h over 39 days, Oct 1 –
+  Nov 18, 2020; at most one such vessel on any day), plus fishing. On both
+  days sampled, that vessel was the survey vessel DEEP HELDER (below).
 - **NS02 is quiet** (~1 vessel-hour/day, mostly fishing).
 - **Cargo and tankers are almost absent** within 10 km of every buoy
   (≤ 0.02 vessel-hours/day). Large ships use the east–west lane at ~40.55° N,
