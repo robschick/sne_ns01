@@ -39,9 +39,9 @@ answers_by_day <- function(tc, alpha, eta, T, days) {
 
 daily <- do.call(rbind, lapply(buoys, function(b) {
   x  <- read_anim(b)
-  q  <- read_params(b)$quiet$daily
-  tc <- sort(x$calls$ts)
   p  <- read_params(b)
+  q  <- p$quiet$daily
+  tc <- sort(x$calls$ts)
   # Window end = the model's maxT (last knot), not the 5-min background grid,
   # which can stop up to 5 min short.
   ex <- answers_by_day(tc, x$fit$alpha, x$fit$eta, max(p$knots$ts), q$day)
@@ -68,7 +68,7 @@ p <- ggplot(long, aes(date, n, fill = part)) +
   facet_wrap(~ site, ncol = 1, labeller = as_labeller(strip)) +
   scale_fill_manual(values = c(background = col_contact, answers = col_answer),
                     breaks = c('background', 'answers'),
-                    labels = c('Calls that start an exchange', 'Answers to an earlier call'),
+                    labels = c('Contact calls', 'Counter-calls'),   # as branch_counts.png
                     name = NULL) +
   scale_x_date(date_breaks = '1 month', date_labels = '%b', expand = c(0, 0)) +
   scale_y_continuous(labels = scales::comma, breaks = scales::breaks_pretty(3),
