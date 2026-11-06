@@ -298,8 +298,15 @@ fishermen.
   traffic (about 6× the prior winter), and it is also the site most sensitive
   to noise (Fig 4). We haven't tested whether those are linked. Comparing
   traffic with the recorded noise is the next step.
+- **The survey-type vessels are wind-farm site surveys** on every day we
+  checked: MINERVA UNO (Oct, Dec and Jan) and ARTEMIS ANGLER (Nov 2021, a
+  high-resolution 3D survey), both in the northern Vineyard Wind lease. At
+  COX01 in fall 2020 it was DEEP HELDER, surveying the Revolution Wind /
+  South Fork sites. These are high-resolution geophysical surveys, not
+  oil-and-gas airgun seismic.
 - **The prior winter isn't a clean baseline.** COX01 was *busier* in fall 2020,
-  mostly from one seismic-type vessel. One earlier winter can't separate a wind
+  mostly from Dutch-flagged survey-type traffic (DEEP HELDER on the days we
+  checked). One earlier winter can't separate a wind
   effect from ordinary year-to-year change, and 2020 may still carry COVID
   shipping effects.
 - **What AIS misses.** Most small boats don't carry AIS, and the vessel groups
