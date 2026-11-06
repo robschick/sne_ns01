@@ -7,7 +7,7 @@
 #   background = posterior median of the day's integrated mu(t)
 #                (10b_paramExport.R, quiet$daily$back_actual; calls that start
 #                an exchange)
-#   answers    = the day's integral of sum_{t_i < t} alpha * exp(-eta (t - t_i))
+#   answers    = the day's exact integral of sum_{t_i < t} alpha * exp(-eta (t - t_i))
 #                over the detected calls, with alpha, eta at posterior medians
 #                (calls triggered by an earlier call)
 # Their sum is within 0.4% of the detected calls at every buoy.
@@ -21,15 +21,27 @@ source('src/talk_figs.R')   # buoys, labels, theme_talk, save_talk, excite_grid(
 
 col_answer <- '#92c5de'     # as 15_quietSeason.R
 
+# Each call's bump, integrated exactly over its own day and the next (the bump
+# halves in 1.3-2 min, so nothing reaches a third day), cut off at the window
+# end T. Days are model days (day 0 = Oct 1, 1440 min each).
+answers_by_day <- function(tc, alpha, eta, T, days) {
+  d0  <- floor(tc / 1440)
+  cum <- function(t) alpha / eta * (1 - exp(-eta * pmax(pmin(t, T) - tc, 0)))   # bump area up to t
+  b0  <- 1440 * (d0 + 1)
+  own <- tapply(cum(b0), d0, sum)
+  nxt <- tapply(cum(b0 + 1440) - cum(b0), d0 + 1, sum)
+  out <- setNames(numeric(length(days)), days)
+  out[names(own)[names(own) %in% names(out)]] <- own[names(own) %in% names(out)]
+  k <- names(nxt)[names(nxt) %in% names(out)]
+  out[k] <- out[k] + nxt[k]
+  as.vector(out)
+}
+
 daily <- do.call(rbind, lapply(buoys, function(b) {
   x  <- read_anim(b)
   q  <- read_params(b)$quiet$daily
   tc <- sort(x$calls$ts)
-  # 1-min grid: the answers' bumps halve in 1.3-2 min, and a regular grid
-  # integrates them without bias.
-  tg <- seq(0, max(x$background$ts), by = 1)
-  ex <- tapply(excite_grid(tg, tc, x$fit$alpha, x$fit$eta), floor(tg / 1440), sum)
-  ex <- ex[as.character(q$day)]; ex[is.na(ex)] <- 0
+  ex <- answers_by_day(tc, x$fit$alpha, x$fit$eta, max(x$background$ts), q$day)
   data.frame(site = labels[[b]], date = as.Date('2021-10-01') + q$day,
              background = q$back_actual, answers = as.vector(ex),
              calls = tabulate(floor(tc / 1440) + 1, nbins = max(q$day) + 1)[q$day + 1])
@@ -40,8 +52,8 @@ tot <- aggregate(cbind(background, answers, calls) ~ site, daily, sum)
 tot$share <- tot$answers / (tot$background + tot$answers)
 print(format(tot, digits = 3, big.mark = ','), row.names = FALSE)
 
-strip <- setNames(sprintf('%s  (%s calls, %.0f%% answers)', tot$site,
-                          trimws(format(tot$calls, big.mark = ',')), 100 * tot$share), tot$site)
+strip <- setNames(sprintf('%s  (%s calls)', tot$site,
+                          trimws(format(tot$calls, big.mark = ','))), tot$site)
 daily$site <- factor(daily$site, labels[buoys])
 
 long <- rbind(data.frame(daily[, c('site', 'date')], part = 'background', n = daily$background),
@@ -58,15 +70,12 @@ p <- ggplot(long, aes(date, n, fill = part)) +
   scale_x_date(date_breaks = '1 month', date_labels = '%b', expand = c(0, 0)) +
   scale_y_continuous(labels = scales::comma, breaks = scales::breaks_pretty(3),
                      expand = expansion(c(0, 0.05))) +
-  labs(title = 'Detected calls per day',
-       subtitle = 'Expected from the fitted model, split into calls that start an exchange and the answers they draw',
-       x = NULL, y = 'Calls per day') +
+  labs(x = NULL, y = 'Calls per day') +
   theme_talk +
-  theme(legend.position = 'top', legend.justification = 'left',
-        legend.margin = margin(0, 0, 0, 0), legend.box.spacing = unit(4, 'pt'),
+  theme(legend.position = 'bottom', legend.justification = 'left',
+        legend.margin = margin(0, 0, 0, 0), legend.box.spacing = unit(8, 'pt'),
         panel.spacing.y = unit(14, 'pt'),
         panel.grid.major.x = element_blank(),
-        strip.text = element_text(hjust = 0, face = 'bold', size = 22),
-        plot.subtitle = element_text(colour = 'grey35', size = 18))
+        strip.text = element_text(hjust = 0, face = 'bold', size = 22))
 
 save_talk(p, 'daily_lam')
