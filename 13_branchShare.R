@@ -47,6 +47,10 @@ write.csv(summ, 'fig/talk/branch_share.csv', row.names = FALSE)
 
 pct <- function(x) sprintf('%.0f%%', 100 * x)
 
+# branch_counts follows daily_lam.png (19_dailyLam.R) on the slides, so it uses
+# the same pair: dark blue for contact calls, light blue for counter-calls.
+col_answer <- '#92c5de'
+
 theme_talk <- theme_minimal(base_size = 22) +
   theme(panel.grid.major.y = element_blank(), panel.grid.minor = element_blank(),
         axis.text.y = element_text(face = 'bold', colour = 'black'),
@@ -85,7 +89,7 @@ p_counts <- ggplot(long, aes(n, site, fill = part)) +
   geom_text(data = summ, aes(x = background + counter, y = site,
                              label = sprintf('%s counter-calls', pct(share))),
             inherit.aes = FALSE, hjust = -0.05, size = 6) +
-  scale_fill_manual(values = c('Contact calls' = col_contact, 'Counter-calls' = col_counter),
+  scale_fill_manual(values = c('Contact calls' = col_contact, 'Counter-calls' = col_answer),
                     breaks = c('Contact calls', 'Counter-calls'), name = NULL) +
   scale_x_continuous(labels = scales::comma, limits = c(0, xmax * 1.35),
                      expand = c(0, 0)) +
