@@ -107,8 +107,9 @@ in **calls per hour**. It is not a count of calls in hourly bins.
   excitation from recent calls.
 - **The area under each curve is the expected number of detected calls.**
   Integrated exactly it is 5,771 / 12,496 / 32,615, against 6,098 / 13,017 /
-  33,611 actual calls (95–97%). The answers part matches exactly (calls ×
-  α/η). The few-percent shortfall is in the background: the figure plugs in
+  33,611 actual calls (95–97%). The answers part is calls × α/η to
+  within one call (calls in the last minutes lose the tail of their bump past
+  Mar 1). The few-percent shortfall is in the background: the figure plugs in
   the pointwise posterior *median* of μ, which sits below its mean because μ
   is modeled on the log scale and is right-skewed. For COX01 the plug-in
   background integrates to 2,134, against the fit's background total of 2,462.
