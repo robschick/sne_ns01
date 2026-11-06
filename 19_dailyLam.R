@@ -41,7 +41,10 @@ daily <- do.call(rbind, lapply(buoys, function(b) {
   x  <- read_anim(b)
   q  <- read_params(b)$quiet$daily
   tc <- sort(x$calls$ts)
-  ex <- answers_by_day(tc, x$fit$alpha, x$fit$eta, max(x$background$ts), q$day)
+  p  <- read_params(b)
+  # Window end = the model's maxT (last knot), not the 5-min background grid,
+  # which can stop up to 5 min short.
+  ex <- answers_by_day(tc, x$fit$alpha, x$fit$eta, max(p$knots$ts), q$day)
   data.frame(site = labels[[b]], date = as.Date('2021-10-01') + q$day,
              background = q$back_actual, answers = as.vector(ex),
              calls = tabulate(floor(tc / 1440) + 1, nbins = max(q$day) + 1)[q$day + 1])
