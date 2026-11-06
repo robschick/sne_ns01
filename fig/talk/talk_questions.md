@@ -100,17 +100,23 @@ in **calls per hour**. It is not a count of calls in hourly bins.
 | Background μ, top 1% of times | 14 calls/h | 27 calls/h | 41 calls/h |
 | Tallest peak (of which background) | 218 (69) | 355 (127) | 269 (71) |
 
-- **Background vs spikes.** The flat line is the background, close to zero
-  most of the season. The tall spikes are mostly calls triggering more calls
+- **Background vs spikes.** Only the total λ is drawn. Between bouts it
+  falls back to the background μ, which is close to zero most of the season,
+  so the flat stretches are effectively the background. The tall spikes are mostly calls triggering more calls
   during a bout: at NS01's tallest peak, about two-thirds of the 355 is
   excitation from recent calls.
 - **The area under each curve is the expected number of detected calls.**
-  Summing λ × 5 min gives 5,739 / 12,484 / 32,632, against 6,098 / 13,017 /
-  33,611 actual calls (94–97%).
+  Integrated exactly it is 5,771 / 12,496 / 32,615, against 6,098 / 13,017 /
+  33,611 actual calls (95–97%). The answers part matches exactly (calls ×
+  α/η). The few-percent shortfall is in the background: the figure plugs in
+  the pointwise posterior *median* of μ, which sits below its mean because μ
+  is modeled on the log scale and is right-skewed. For COX01 the plug-in
+  background integrates to 2,134, against the fit's background total of 2,462.
+  The 5-minute grid doesn't bias the area (grid and exact sums agree within
+  1%).
 - **The spikes are drawn a little low.** Each bump halves in 1.3–2 minutes,
   so by the next 5-minute grid point only 7–18% of it is left, and a grid point
-  rarely lands right after a call. That is also why the area falls a few
-  percent short of the call count. The true instantaneous peaks are somewhat
+  rarely lands right after a call. The true instantaneous peaks are somewhat
   higher than drawn.
 - **On stage.** "Calls per hour" is a correct axis label. If asked what 300
   means: "how fast calls were coming in at that moment, not 300 calls in that
