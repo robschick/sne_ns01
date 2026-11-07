@@ -81,6 +81,7 @@ draw_frame <- function(now, rate, calls, basemap, t0, win_min, ymax,
     labs(title = format(t0 + now * 60, '%d %b %Y  %H:%M %Z', tz = tz))
 
   has_pois <- !is.null(r$poisson)
+  rug_h    <- ymax * 0.22                              # call ticks sit below zero, rug-style
   subtitle <- c('Grey: calls that start a conversation.',
                 'Green: plus calls answering one heard minutes earlier.',
                 if (has_pois) 'Dashed: a Poisson model, one smooth rate with no answering.')
@@ -90,11 +91,13 @@ draw_frame <- function(now, rate, calls, basemap, t0, win_min, ymax,
     (if (has_pois) geom_line(aes(y = pmin(poisson, ymax)), colour = col_pois,
                              linewidth = 1, linetype = 'dashed')) +
     geom_line(aes(y = pmin(lambda, ymax)), colour = col_hawkes, linewidth = 1.1) +
-    geom_segment(data = cs, aes(x = t_min, xend = t_min, y = 0, yend = ymax * 0.25),
+    geom_hline(yintercept = 0, colour = 'grey70', linewidth = 0.3) +
+    geom_segment(data = cs, aes(x = t_min, xend = t_min, y = -rug_h, yend = -rug_h * 0.15),
                  colour = col_call, linewidth = 0.55) +
     facet_grid(site ~ ., switch = 'y', drop = FALSE) +
     scale_x_continuous(limits = c(0, win_min), expand = c(0, 0), name = 'minutes') +
-    scale_y_continuous(limits = c(0, ymax), name = 'calls per hour') +
+    scale_y_continuous(limits = c(-rug_h, ymax), breaks = pretty(c(0, ymax), n = 3),
+                       expand = expansion(mult = c(0, 0.05)), name = 'calls per hour') +
     theme_minimal(base_size = 17) +
     theme(strip.text.y.left = element_text(angle = 0, face = 'bold', size = 18),
           strip.placement = 'outside', panel.grid.minor = element_blank()) +
