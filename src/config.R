@@ -193,14 +193,31 @@ fold.rtct <- 'rtct'
 fold.num <- 'num'
 fold.fig <- 'fig'
 
-fit_base <- if (dir.exists(file.path(hpc_base, fold.fit, buoy))) {
+# Pick the tier that actually holds the production fit FILE, not just the
+# buoy folder: scratch purges delete files but can leave the folder (e.g.
+# fit/cox01/ survived with only benchmark/ inside, Nov 2026), which made the
+# old dir.exists() check stop at scratch and load() fail.
+fit_file <- paste0(datai, fiti_lgcp, '.RData')
+fit_base <- if (file.exists(file.path(hpc_base, fold.fit, buoy, fit_file))) {
+  hpc_base
+} else if (file.exists(file.path(hpc_archive_base, fold.fit, buoy, fit_file))) {
+  hpc_archive_base
+} else if (dir.exists(file.path(hpc_base, fold.fit, buoy))) {
+  hpc_base          # no fit yet (e.g. 02_fit about to write one) — scratch
+} else if (dir.exists(file.path(hpc_archive_base, fold.fit, buoy))) {
+  hpc_archive_base
+} else {
+  local_base
+}
+# Benchmark outputs live under fit/<buoy>/benchmark/ on scratch; keep the
+# folder-based rule for them so they don't follow the fit to the archive.
+path_base <- if (dir.exists(file.path(hpc_base, fold.fit, buoy))) {
   hpc_base
 } else if (dir.exists(file.path(hpc_archive_base, fold.fit, buoy))) {
   hpc_archive_base
 } else {
   local_base
 }
-path_base <- fit_base # legacy alias used by benchmark_*.R
 
 path.data <- file.path(local_base, fold.data, '')
 path.fit <- file.path(fit_base, fold.fit, buoy, '')
